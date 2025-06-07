@@ -8,10 +8,6 @@ enum Command {
     Unknown(String),
 }
 
-fn print_not_found(command: &str) {
-    println!("{}: command not found", command);
-}
-
 fn main() {
 
     // Wait for user input
@@ -39,11 +35,11 @@ fn main() {
                 if valid_commands.contains(&argument.as_str()) {
                     println!("{} is a shell builtin", argument);
                 } else {
-                    print_not_found(argument.as_str());
+                    println!("{}: not found", argument);
                 }
             },
             _ => {
-                print_not_found(input.as_str());
+                println!("{}: command not found", input);
             }
         }
         input.clear(); // Clear the input buffer for the next command
