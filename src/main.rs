@@ -38,8 +38,6 @@ fn main() {
 
     let valid_commands_builtin = vec!["exit", "echo", "type"];
     let valid_commands_executables = get_path_executables();
-    println!("{:?}", valid_commands_builtin);
-    println!("{:?}", valid_commands_executables);
 
     loop {
         print!("$ ");
