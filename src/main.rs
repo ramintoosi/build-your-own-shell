@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::process::exit;
 
 fn main() {
     
@@ -11,7 +12,14 @@ fn main() {
         print!("$ ");
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut input).unwrap();
-        println!("{}: command not found", input.trim());
+        match input.trim() {
+            "exit 0" => {
+                exit(0)
+            },
+            _ => {
+                println!("{}: command not found", input.trim());
+            }
+        }
         input.clear(); // Clear the input buffer for the next command
     }
     
