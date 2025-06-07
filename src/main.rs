@@ -65,7 +65,7 @@ fn main() {
                 if valid_commands_builtin.contains(&argument.as_str()) {
                     println!("{} is a shell builtin", argument);
                 } else if valid_commands_executables.contains_key(&argument) { 
-                    println!("{} command is {}", argument, valid_commands_executables.get(&argument).unwrap());
+                    println!("{} is {}", argument, valid_commands_executables.get(&argument).unwrap());
                 } 
                 else {
                     println!("{}: not found", argument);
