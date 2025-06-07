@@ -3,6 +3,7 @@ use std::io::{self, Write};
 use std::process::exit;
 use std::env;
 use std::collections::HashMap;
+use std::path::Path;
 
 /// Get the list of executables in the PATH environment variable
 ///
@@ -13,13 +14,16 @@ fn get_path_executables() ->  HashMap<String, String>{
     let path = env::var("PATH").unwrap_or("".to_string());
     let mut executables: HashMap<String, String> = HashMap::new();
     for dir in path.split(":") {
+        let dir_path = Path::new(dir);
         if let Ok(entries) = std::fs::read_dir(dir) {
             for entry in entries {
                 if let Ok(entry) = entry {
                     if let Some(name) = entry.file_name().to_str() {
                         // Check if the file is executable
                         if entry.metadata().map_or(false, |m| m.is_file()) {
-                            executables.insert(name.to_string(), entry.path().to_string_lossy().to_string());
+                            println!("{:?} - {:?}", dir_path, name);
+                            let full_path = dir_path.join(name);
+                            executables.insert(name.to_string(), full_path.display().to_string());
                         }
                     }
                 }
