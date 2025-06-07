@@ -21,7 +21,6 @@ fn get_path_executables() ->  HashMap<String, String>{
                     if let Some(name) = entry.file_name().to_str() {
                         // Check if the file is executable
                         if entry.metadata().map_or(false, |m| m.is_file()) {
-                            println!("{:?} - {:?}", dir_path, name);
                             let full_path = dir_path.join(name);
                             executables.insert(name.to_string(), full_path.display().to_string());
                         }
