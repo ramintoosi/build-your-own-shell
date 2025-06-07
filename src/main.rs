@@ -16,6 +16,10 @@ fn main() {
             "exit 0" => {
                 exit(0)
             },
+            t if t.starts_with("echo") => {
+                let message = t.trim_start_matches("echo").trim();
+                println!("{}", message);
+            },
             _ => {
                 println!("{}: command not found", input.trim());
             }
