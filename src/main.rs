@@ -2,12 +2,6 @@
 use std::io::{self, Write};
 use std::process::exit;
 
-enum Command {
-    Exit(i32),
-    Echo(String),
-    Unknown(String),
-}
-
 fn main() {
 
     // Wait for user input
@@ -39,7 +33,7 @@ fn main() {
                 }
             },
             _ => {
-                println!("{}: command not found", input);
+                println!("{}: command not found", input.trim());
             }
         }
         input.clear(); // Clear the input buffer for the next command
