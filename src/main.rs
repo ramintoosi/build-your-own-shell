@@ -19,6 +19,9 @@ fn get_path_executables() ->  HashMap<String, String>{
             for entry in entries {
                 if let Ok(entry) = entry {
                     if let Some(name) = entry.file_name().to_str() {
+                        if executables.contains_key(&name.to_string()) {
+                            continue;
+                        }
                         // Check if the file is executable
                         if entry.metadata().map_or(false, |m| m.is_file()) {
                             let full_path = dir_path.join(name);
