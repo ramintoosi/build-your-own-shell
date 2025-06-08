@@ -80,7 +80,12 @@ fn main() {
                 if !argument.is_empty() {
                     if Path::new(&argument).exists() {
                         env::set_current_dir(&argument).unwrap();
-                    } else { 
+                    } else if argument.eq("~") { 
+                        let home_dir = env::var("HOME").unwrap_or("".to_string());
+                        env::set_current_dir(home_dir).unwrap();
+                    } 
+                    else { 
+                        
                         println!("cd: {}: No such file or directory", argument);
                     }
                 }
