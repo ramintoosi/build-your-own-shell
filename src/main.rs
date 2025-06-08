@@ -84,9 +84,9 @@ fn main() {
                 if !stdout.is_empty() {
                     println!("{}", &stdout.trim());
                 }
-                if !stderr.is_empty() {
-                    println!("{:?}", &stderr.trim());
-                }
+                // if !stderr.is_empty() {
+                //     println!("{:?}", &stderr.trim());
+                // }
 
             },
             _ => {
