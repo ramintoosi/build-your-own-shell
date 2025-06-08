@@ -43,7 +43,7 @@ fn main() {
     // Wait for user input
     let mut input = String::new();
 
-    let valid_commands_builtin = vec!["exit", "echo", "type", "pwd"];
+    let valid_commands_builtin = vec!["exit", "echo", "type", "pwd", "cd"];
     let valid_commands_executables = get_path_executables();
 
     loop {
@@ -75,7 +75,16 @@ fn main() {
             "pwd" => {
                 let current_dir = env::current_dir().unwrap();
                 println!("{}", current_dir.display());
-            }
+            },
+            "cd" => {
+                if !argument.is_empty() {
+                    if Path::new(&argument).exists() {
+                        env::set_current_dir(&argument).unwrap();
+                    } else { 
+                        println!("cd: {}: No such file or directory", argument);
+                    }
+                }
+            },
             _ if valid_commands_executables.contains_key(&command) => {
                 let full_path = valid_commands_executables.get(&command).unwrap();
                 let args = argument.split(" ");
