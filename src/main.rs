@@ -60,7 +60,7 @@ fn main() {
                 exit(0)
             },
             t if t.starts_with("echo") => {
-                println!("{}", argument);
+                println!("{}", argument.replace("'", ""));
             },
             t if t.starts_with("type") => {
                 if valid_commands_builtin.contains(&argument.as_str()) {
@@ -91,14 +91,14 @@ fn main() {
                 }
             },
             _ if valid_commands_executables.contains_key(&command) => {
-                let full_path = valid_commands_executables.get(&command).unwrap();
+                // let full_path = valid_commands_executables.get(&command).unwrap();
                 let args = argument.split(" ");
                 // println!("{:?} - {:?}", full_path, args);
                 let output = Command::new(command)
                     .args(args) // Pass the rest of the arguments
                     .output().unwrap();
                 let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
+                // let stderr = String::from_utf8_lossy(&output.stderr);
                 if !stdout.is_empty() {
                     println!("{}", &stdout.trim());
                 }
