@@ -38,6 +38,46 @@ fn get_path_executables() ->  HashMap<String, String>{
 
 }
 
+/// Parse the input string into a command and its arguments
+/// # Arguments:
+/// * `input` - A string slice containing the input command
+/// # Returns:
+/// * A tuple containing the command as a String and a vector of arguments as Vec<String>
+fn parse_input(input: &str) -> (String, Vec<String>) {
+    let mut args = Vec::new();
+    let mut current = String::new();
+    let mut in_single_quote = false;
+    let mut chars = input.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '\'' => {
+                in_single_quote = !in_single_quote;
+            }
+            ' ' if !in_single_quote => {
+                if !current.is_empty() {
+                    args.push(current.clone());
+                    current.clear();
+                }
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+
+    if !current.is_empty() {
+        args.push(current);
+    }
+
+    // trim all arguments
+    args.iter_mut().for_each(|arg| *arg = arg.trim().to_string());
+    
+    let command = args.get(0).cloned().unwrap_or_default();
+    let remaining_args = if args.len() > 1 { args[1..].to_vec() } else { vec![] };
+    (command.trim().to_string(), remaining_args)
+}
+
 fn main() {
 
     // Wait for user input
@@ -51,24 +91,23 @@ fn main() {
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut input).unwrap();
         // parse input into two sections
-        let parts: Vec<&str> = input.trim().splitn(2, " ").collect();
-        let command = parts.get(0).unwrap_or(&"").to_string();
-        let argument = parts.get(1).unwrap_or(&"").to_string();
+        let (command, args) = parse_input(&input);
+        let argument = args.join(" ").trim().to_string(); // used for echo/type/cd etc.
+
 
         match  command.as_str() {
-            t if t.starts_with("exit") => {
+            "exit" => {
                 exit(0)
             },
-            t if t.starts_with("echo") => {
-                println!("{}", argument.replace("'", ""));
+            "echo" => {
+                println!("{}", argument.trim());
             },
-            t if t.starts_with("type") => {
+            "type" => {
                 if valid_commands_builtin.contains(&argument.as_str()) {
                     println!("{} is a shell builtin", argument);
                 } else if valid_commands_executables.contains_key(&argument) {
                     println!("{} is {}", argument, valid_commands_executables.get(&argument).unwrap());
-                }
-                else {
+                } else {
                     println!("{}: not found", argument);
                 }
             },
@@ -80,20 +119,17 @@ fn main() {
                 if !argument.is_empty() {
                     if Path::new(&argument).exists() {
                         env::set_current_dir(&argument).unwrap();
-                    } else if argument.eq("~") { 
+                    } else if argument.eq("~") {
                         let home_dir = env::var("HOME").unwrap_or("".to_string());
                         env::set_current_dir(home_dir).unwrap();
-                    } 
-                    else { 
-                        
+                    }
+                    else {
+
                         println!("cd: {}: No such file or directory", argument);
                     }
                 }
             },
             _ if valid_commands_executables.contains_key(&command) => {
-                // let full_path = valid_commands_executables.get(&command).unwrap();
-                let args = argument.split(" ");
-                // println!("{:?} - {:?}", full_path, args);
                 let output = Command::new(command)
                     .args(args) // Pass the rest of the arguments
                     .output().unwrap();
