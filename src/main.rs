@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::process::exit;
-use std::env;
+use std::process::{exit};
+use std::{env};
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
@@ -43,13 +43,16 @@ fn get_path_executables() ->  HashMap<String, String>{
 /// * `input` - A string slice containing the input command
 /// # Returns:
 /// * A tuple containing the command as a String and a vector of arguments as Vec<String>
-fn parse_input(input: &str) -> (String, Vec<String>) {
+fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>) {
     let mut args = Vec::new();
     let mut current = String::new();
     let mut in_single_quote = false;
     let mut in_double_quote = false;
     let mut backslash_happened = false;
+    
+    let input = input.replace(" 1> ", " > ");
     let mut chars = input.chars().peekable();
+    
     
     let special_chars = ['\\', '$', '"', '"'];
 
@@ -97,8 +100,31 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
     args.iter_mut().for_each(|arg| *arg = arg.trim().to_string());
 
     let command = args.get(0).cloned().unwrap_or_default();
-    let remaining_args = if args.len() > 1 { args[1..].to_vec() } else { vec![] };
-    (command, remaining_args)
+    let mut remaining_args = if args.len() > 1 { args[1..].to_vec() } else { vec![] };
+    let mut argument = remaining_args.join(" ").trim().to_string(); // used for echo/type/cd etc.
+    // check if redirect is present
+    let mut redirect: Option<String> = None;
+    
+    if argument.contains(" > ") {
+        let argument_clone = argument.clone();
+        let argument_split = argument_clone.split(" > ").collect::<Vec<&str>>();
+        argument = argument_split.get(0).cloned().unwrap_or(&"").trim().to_string();
+        // remove the redirect part from remaining_args
+        if let Some(index) = remaining_args.iter().position(|s| s == ">") {
+            // Truncate the vector, keeping elements *before* the index
+            remaining_args.truncate(index);
+            redirect = Some(argument_split.get(1).unwrap_or(&"").to_string());
+        }
+    };
+    (command, remaining_args, argument, redirect)
+}
+
+fn handle_output(output: &str, redirect: &Option<String>) {
+    if let Some(file_path) = redirect {
+        std::fs::write(file_path, output).unwrap();
+    } else { 
+        println!("{}", output.trim());
+    }
 }
 
 fn main() {
@@ -114,29 +140,31 @@ fn main() {
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut input).unwrap();
         // parse input into two sections
-        let (command, args) = parse_input(&input);
-        let argument = args.join(" ").trim().to_string(); // used for echo/type/cd etc.
-
-
+        let (command, args, argument, redirect) = parse_input(&input);
+        
         match  command.as_str() {
             "exit" => {
                 exit(0)
             },
             "echo" => {
-                println!("{}", argument.trim());
+                handle_output(&argument, &redirect);
             },
             "type" => {
                 if valid_commands_builtin.contains(&argument.as_str()) {
-                    println!("{} is a shell builtin", argument);
+                    let output = format!("{} is a shell builtin", argument);
+                    handle_output(&output, &redirect);
                 } else if valid_commands_executables.contains_key(&argument) {
-                    println!("{} is {}", argument, valid_commands_executables.get(&argument).unwrap());
+                    let output = format!("{} is {}", argument, valid_commands_executables.get(&argument).unwrap());
+                    handle_output(&output, &redirect);
                 } else {
-                    println!("{}: not found", argument);
+                    let output = format!("{}: not found", argument);
+                    handle_output(&output, &redirect);
                 }
             },
             "pwd" => {
                 let current_dir = env::current_dir().unwrap();
-                println!("{}", current_dir.display());
+                handle_output(&current_dir.to_string_lossy(), &redirect);
+                
             },
             "cd" => {
                 if !argument.is_empty() {
@@ -147,8 +175,8 @@ fn main() {
                         env::set_current_dir(home_dir).unwrap();
                     }
                     else {
-
-                        println!("cd: {}: No such file or directory", argument);
+                        let output = format!("cd: {}: No such file or directory", argument);
+                        handle_output(&output, &redirect);
                     }
                 }
             },
@@ -157,17 +185,18 @@ fn main() {
                     .args(args) // Pass the rest of the arguments
                     .output().unwrap();
                 let stdout = String::from_utf8_lossy(&output.stdout);
-                // let stderr = String::from_utf8_lossy(&output.stderr);
+                let stderr = String::from_utf8_lossy(&output.stderr);
                 if !stdout.is_empty() {
-                    println!("{}", &stdout.trim());
+                    handle_output(&stdout, &redirect);
                 }
-                // if !stderr.is_empty() {
-                //     println!("{:?}", &stderr.trim());
-                // }
+                if !stderr.is_empty() {
+                    handle_output(&stderr, &None);
+                }
 
             },
             _ => {
-                println!("{}: command not found", input.trim());
+                let output = format!("{}: command not found", input.trim());
+                handle_output(&output, &redirect);
             }
         }
         input.clear(); // Clear the input buffer for the next command
