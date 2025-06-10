@@ -56,7 +56,7 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
             '\'' if !in_double_quote & !backslash_happened=> {
                 in_single_quote = !in_single_quote;
             }
-            '"' if !backslash_happened=> {
+            '"' if !backslash_happened & !in_single_quote=> {
                 in_double_quote = !in_double_quote;
             }
             ' ' if !in_single_quote & !in_double_quote & !backslash_happened => {
@@ -69,7 +69,7 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
                 current.push(c);
                 backslash_happened = false;
             }
-            '\\' if !in_double_quote => {
+            '\\' if !in_double_quote & !in_single_quote=> {
                 backslash_happened = true;
             }
             _ => {
