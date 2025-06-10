@@ -50,6 +50,8 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
     let mut in_double_quote = false;
     let mut backslash_happened = false;
     let mut chars = input.chars().peekable();
+    
+    let special_chars = ['\\', '$', '"', '"'];
 
     while let Some(c) = chars.next() {
         match c {
@@ -65,12 +67,21 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
                     current.clear();
                 }
             }
-            _ if backslash_happened => {
+            _ if backslash_happened & !in_double_quote => {
                 current.push(c);
                 backslash_happened = false;
             }
-            '\\' if !in_double_quote & !in_single_quote=> {
+            '\\' if !in_single_quote & !backslash_happened => {
                 backslash_happened = true;
+            }
+            _ if backslash_happened & in_double_quote => {
+                if special_chars.contains(&c) {
+                    current.push(c);
+                } else {
+                    current.push('\\');
+                    current.push(c);
+                }
+                backslash_happened = false;
             }
             _ => {
                 current.push(c);
