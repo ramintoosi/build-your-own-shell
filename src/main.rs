@@ -49,11 +49,11 @@ fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>) {
     let mut in_single_quote = false;
     let mut in_double_quote = false;
     let mut backslash_happened = false;
-    
+
     let input = input.replace(" 1> ", " > ");
     let mut chars = input.chars().peekable();
-    
-    
+
+
     let special_chars = ['\\', '$', '"', '"'];
 
     while let Some(c) = chars.next() {
@@ -103,26 +103,33 @@ fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>) {
     let mut remaining_args = if args.len() > 1 { args[1..].to_vec() } else { vec![] };
     let mut argument = remaining_args.join(" ").trim().to_string(); // used for echo/type/cd etc.
     // check if redirect is present
-    let mut redirect: Option<String> = None;
-    
-    if argument.contains(" > ") {
+    let mut redirect_stdout: Option<String> = None;
+    let mut redirect_stderr: Option<String> = None;
+
+    if argument.contains(" > ") | argument.contains(" 2> ") {
         let argument_clone = argument.clone();
-        let argument_split = argument_clone.split(" > ").collect::<Vec<&str>>();
+        let split_pattern = if argument.contains(" > ") {
+            " > "
+        } else {
+            " 2> "
+        };
+        let argument_split = argument_clone.split(split_pattern).collect::<Vec<&str>>();
         argument = argument_split.get(0).cloned().unwrap_or(&"").trim().to_string();
         // remove the redirect part from remaining_args
-        if let Some(index) = remaining_args.iter().position(|s| s == ">") {
+        if let Some(index) = remaining_args.iter().position(|s| (s == ">") | (s == "2>")) {
             // Truncate the vector, keeping elements *before* the index
             remaining_args.truncate(index);
-            redirect = Some(argument_split.get(1).unwrap_or(&"").to_string());
+            redirect_stdout = Some(argument_split.get(1).unwrap_or(&"").to_string());
         }
     };
-    (command, remaining_args, argument, redirect)
+    
+    (command, remaining_args, argument, redirect_stdout)
 }
 
 fn handle_output(output: &str, redirect: &Option<String>) {
     if let Some(file_path) = redirect {
         std::fs::write(file_path, output).unwrap();
-    } else { 
+    } else {
         println!("{}", output.trim());
     }
 }
@@ -141,7 +148,7 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
         // parse input into two sections
         let (command, args, argument, redirect) = parse_input(&input);
-        
+
         match  command.as_str() {
             "exit" => {
                 exit(0)
@@ -164,7 +171,7 @@ fn main() {
             "pwd" => {
                 let current_dir = env::current_dir().unwrap();
                 handle_output(&current_dir.to_string_lossy(), &redirect);
-                
+
             },
             "cd" => {
                 if !argument.is_empty() {
