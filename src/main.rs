@@ -48,21 +48,29 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
     let mut current = String::new();
     let mut in_single_quote = false;
     let mut in_double_quote = false;
+    let mut backslash_happened = false;
     let mut chars = input.chars().peekable();
 
     while let Some(c) = chars.next() {
         match c {
-            '\'' if !in_double_quote => {
+            '\'' if !in_double_quote & !backslash_happened=> {
                 in_single_quote = !in_single_quote;
             }
-            '"' => {
+            '"' if !backslash_happened=> {
                 in_double_quote = !in_double_quote;
             }
-            ' ' if !in_single_quote & !in_double_quote => {
+            ' ' if !in_single_quote & !in_double_quote & !backslash_happened => {
                 if !current.is_empty() {
                     args.push(current.clone());
                     current.clear();
                 }
+            }
+            _ if backslash_happened => {
+                current.push(c);
+                backslash_happened = false;
+            }
+            '\\' if !in_double_quote => {
+                backslash_happened = true;
             }
             _ => {
                 current.push(c);
@@ -76,7 +84,7 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
 
     // trim all arguments
     args.iter_mut().for_each(|arg| *arg = arg.trim().to_string());
-    
+
     let command = args.get(0).cloned().unwrap_or_default();
     let remaining_args = if args.len() > 1 { args[1..].to_vec() } else { vec![] };
     (command, remaining_args)
