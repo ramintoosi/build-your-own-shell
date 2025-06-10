@@ -47,14 +47,18 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
     let mut args = Vec::new();
     let mut current = String::new();
     let mut in_single_quote = false;
+    let mut in_double_quote = false;
     let mut chars = input.chars().peekable();
 
     while let Some(c) = chars.next() {
         match c {
-            '\'' => {
+            '\'' if !in_double_quote => {
                 in_single_quote = !in_single_quote;
             }
-            ' ' if !in_single_quote => {
+            '"' => {
+                in_double_quote = !in_double_quote;
+            }
+            ' ' if !in_single_quote & !in_double_quote => {
                 if !current.is_empty() {
                     args.push(current.clone());
                     current.clear();
@@ -75,7 +79,7 @@ fn parse_input(input: &str) -> (String, Vec<String>) {
     
     let command = args.get(0).cloned().unwrap_or_default();
     let remaining_args = if args.len() > 1 { args[1..].to_vec() } else { vec![] };
-    (command.trim().to_string(), remaining_args)
+    (command, remaining_args)
 }
 
 fn main() {
