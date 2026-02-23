@@ -43,7 +43,7 @@ fn get_path_executables() ->  HashMap<String, String>{
 /// * `input` - A string slice containing the input command
 /// # Returns:
 /// * A tuple containing the command as a String and a vector of arguments as Vec<String>
-fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>) {
+fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>, Option<String>) {
     let mut args = Vec::new();
     let mut current = String::new();
     let mut in_single_quote = false;
@@ -119,11 +119,15 @@ fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>) {
         if let Some(index) = remaining_args.iter().position(|s| (s == ">") | (s == "2>")) {
             // Truncate the vector, keeping elements *before* the index
             remaining_args.truncate(index);
-            redirect_stdout = Some(argument_split.get(1).unwrap_or(&"").to_string());
+            if split_pattern == " > " {
+                redirect_stdout = Some(argument_split.get(1).unwrap_or(&"").to_string());
+            } else {
+                redirect_stderr = Some(argument_split.get(1).unwrap_or(&"").to_string());
+            }
         }
     };
     
-    (command, remaining_args, argument, redirect_stdout)
+    (command, remaining_args, argument, redirect_stdout, redirect_stderr)
 }
 
 fn handle_output(output: &str, redirect: &Option<String>) {
@@ -147,30 +151,30 @@ fn main() {
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut input).unwrap();
         // parse input into two sections
-        let (command, args, argument, redirect) = parse_input(&input);
+        let (command, args, argument, redirect_stdout, redirect_stderr) = parse_input(&input);
 
         match  command.as_str() {
             "exit" => {
                 exit(0)
             },
             "echo" => {
-                handle_output(&argument, &redirect);
+                handle_output(&argument, &redirect_stdout);
             },
             "type" => {
                 if valid_commands_builtin.contains(&argument.as_str()) {
                     let output = format!("{} is a shell builtin", argument);
-                    handle_output(&output, &redirect);
+                    handle_output(&output, &redirect_stdout);
                 } else if valid_commands_executables.contains_key(&argument) {
                     let output = format!("{} is {}", argument, valid_commands_executables.get(&argument).unwrap());
-                    handle_output(&output, &redirect);
+                    handle_output(&output, &redirect_stdout);
                 } else {
                     let output = format!("{}: not found", argument);
-                    handle_output(&output, &redirect);
+                    handle_output(&output, &redirect_stdout);
                 }
             },
             "pwd" => {
                 let current_dir = env::current_dir().unwrap();
-                handle_output(&current_dir.to_string_lossy(), &redirect);
+                handle_output(&current_dir.to_string_lossy(), &redirect_stdout);
 
             },
             "cd" => {
@@ -183,7 +187,7 @@ fn main() {
                     }
                     else {
                         let output = format!("cd: {}: No such file or directory", argument);
-                        handle_output(&output, &redirect);
+                        handle_output(&output, &redirect_stdout);
                     }
                 }
             },
@@ -194,16 +198,16 @@ fn main() {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 if !stdout.is_empty() {
-                    handle_output(&stdout, &redirect);
+                    handle_output(&stdout, &redirect_stdout);
                 }
                 if !stderr.is_empty() {
-                    handle_output(&stderr, &None);
+                    handle_output(&stderr, &redirect_stderr);
                 }
 
             },
             _ => {
                 let output = format!("{}: command not found", input.trim());
-                handle_output(&output, &redirect);
+                handle_output(&output, &redirect_stdout);
             }
         }
         input.clear(); // Clear the input buffer for the next command
