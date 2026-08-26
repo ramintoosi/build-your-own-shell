@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::process::{exit};
 use std::{env};
 use std::collections::HashMap;
@@ -24,7 +25,7 @@ fn get_path_executables() ->  HashMap<String, String>{
                             continue;
                         }
                         // Check if the file is executable
-                        if entry.metadata().map_or(false, |m| m.is_file()) {
+                        if entry.metadata().map_or(false, |m| m.is_file() && m.permissions().mode() & 0o111 != 0) {
                             let full_path = dir_path.join(name);
                             executables.insert(name.to_string(), full_path.display().to_string());
                         }
@@ -153,6 +154,14 @@ fn main() {
         // parse input into two sections
         let (command, args, argument, redirect_stdout, redirect_stderr) = parse_input(&input);
 
+        // we create the files for redirect no matter what
+        if let Some(file_path) = &redirect_stdout {
+            std::fs::File::create(file_path).unwrap();
+        }
+        if let Some(file_path) = &redirect_stderr {
+            std::fs::File::create(file_path).unwrap();
+        }
+        
         match  command.as_str() {
             "exit" => {
                 exit(0)
