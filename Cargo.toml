@@ -8,5 +8,8 @@ rust-version = "1.80"
 [dependencies]
 anyhow = "1.0.68"                                # error handling
 bytes = "1.3.0"                                  # helps manage buffers
-thiserror = "1.0.38"                             # error handling
+thiserror = "2.0.20"                             # error handling
 regex = "1.11.1"
+# 18.x needs home 0.5.12, which requires rustc 1.88. CodeCrafters uses 1.87.
+rustyline = "17.0.2"
+home = "=0.5.11"

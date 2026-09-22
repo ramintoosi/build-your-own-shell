@@ -7,6 +7,59 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::fs::File;
+use rustyline::completion::{Completer, Pair};
+use rustyline::{Context};
+use rustyline::Result;
+use rustyline::highlight::Highlighter;
+use rustyline::hint::Hinter;
+use rustyline::validate::Validator;
+use rustyline::Helper;
+use rustyline::Editor;
+
+/// autocomplete the command
+struct ShellCompleter;
+
+impl Completer for ShellCompleter {
+    type Candidate = Pair;
+
+    fn complete(
+        &self,
+        line: &str,
+        pos: usize,
+        _ctx: &Context<'_>,
+    ) -> Result<(usize, Vec<Pair>)> {
+        let line_to_cursor = &line[..pos];
+
+        let start = line_to_cursor.rfind(' ').map_or(0, |i| i + 1);
+        let word = &line_to_cursor[start..];
+
+        let builtins = ["exit", "echo", "type", "pwd", "cd"];
+        let mut matches = Vec::new();
+
+        for &cmd in &builtins {
+            if cmd.starts_with(word) {
+                matches.push(Pair {
+                    display: cmd.to_string(),
+                    replacement: format!("{} ", cmd)
+                })
+            }
+        }
+        Ok((start, matches))
+    }
+}
+
+// Empty trait implementations to satisfy the Helper requirements
+impl Highlighter for ShellCompleter {}
+impl Hinter for ShellCompleter {
+    type Hint = String;
+
+    fn hint(&self, _: &str, _: usize, _: &Context<'_>) -> Option<String> {
+        None
+    }
+}
+impl Validator for ShellCompleter {}
+impl Helper for ShellCompleter {}
+
 
 /// Get the list of executables in the PATH environment variable
 ///
@@ -164,16 +217,20 @@ fn handle_output(output: &str, redirect: &Option<String>, redirect_mode: bool) {
 
 fn main() {
 
+    let mut rl = Editor::<ShellCompleter, rustyline::history::DefaultHistory>::new().unwrap();
+    rl.set_helper(Some(ShellCompleter));
+
     // Wait for user input
-    let mut input = String::new();
+    let mut input: String;
 
     let valid_commands_builtin = vec!["exit", "echo", "type", "pwd", "cd"];
     let valid_commands_executables = get_path_executables();
 
     loop {
-        print!("$ ");
-        io::stdout().flush().unwrap();
-        io::stdin().read_line(&mut input).unwrap();
+        // print!("$ ");
+        // io::stdout().flush().unwrap();
+        // io::stdin().read_line(&mut input).unwrap();
+        input = rl.readline("$ ").unwrap();
         // parse input into two sections
         let (command, args, argument, redirect_stdout, redirect_stdout_mode, redirect_stderr, redirect_stderr_mode) = parse_input(&input);
 
