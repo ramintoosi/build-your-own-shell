@@ -6,6 +6,7 @@ use std::{env};
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
+use std::fs::File;
 
 /// Get the list of executables in the PATH environment variable
 ///
@@ -44,14 +45,14 @@ fn get_path_executables() ->  HashMap<String, String>{
 /// * `input` - A string slice containing the input command
 /// # Returns:
 /// * A tuple containing the command as a String and a vector of arguments as Vec<String>
-fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>, Option<String>) {
+fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>, bool, Option<String>, bool) {
     let mut args = Vec::new();
     let mut current = String::new();
     let mut in_single_quote = false;
     let mut in_double_quote = false;
     let mut backslash_happened = false;
 
-    let input = input.replace(" 1> ", " > ");
+    let input = input.replace("1>", ">");
     let mut chars = input.chars().peekable();
 
 
@@ -106,21 +107,36 @@ fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>, Opt
     // check if redirect is present
     let mut redirect_stdout: Option<String> = None;
     let mut redirect_stderr: Option<String> = None;
+    let mut redirect_stdout_mode: bool = false;
+    let mut redirect_stderr_mode: bool = false;
 
-    if argument.contains(" > ") | argument.contains(" 2> ") {
+    if argument.contains(">") {
         let argument_clone = argument.clone();
-        let split_pattern = if argument.contains(" > ") {
-            " > "
+
+        let split_pattern = if argument.contains(" > ") | argument.contains(" >> ") {
+            if argument.contains(" >> ") { 
+                redirect_stdout_mode = true; 
+                " >> "
+            } else {
+                " > "
+            }
         } else {
-            " 2> "
+            if argument.contains(" 2>> ") { 
+                redirect_stderr_mode = true; 
+                " 2>> "
+            } else {
+                " 2> "
+            }
         };
+
         let argument_split = argument_clone.split(split_pattern).collect::<Vec<&str>>();
         argument = argument_split.get(0).cloned().unwrap_or(&"").trim().to_string();
         // remove the redirect part from remaining_args
-        if let Some(index) = remaining_args.iter().position(|s| (s == ">") | (s == "2>")) {
+        if let Some(index) = remaining_args.iter().position(|s| (s == ">") | (s == "2>") | (s == ">>") | (s == "2>>")) {
             // Truncate the vector, keeping elements *before* the index
             remaining_args.truncate(index);
-            if split_pattern == " > " {
+            // println!("argument_split: {:?}", argument_split);
+            if (split_pattern == " > ") | (split_pattern == " >> ") {
                 redirect_stdout = Some(argument_split.get(1).unwrap_or(&"").to_string());
             } else {
                 redirect_stderr = Some(argument_split.get(1).unwrap_or(&"").to_string());
@@ -128,12 +144,19 @@ fn parse_input(input: &str) -> (String, Vec<String>, String, Option<String>, Opt
         }
     };
     
-    (command, remaining_args, argument, redirect_stdout, redirect_stderr)
+    (command, remaining_args, argument, redirect_stdout, redirect_stdout_mode, redirect_stderr, redirect_stderr_mode)
 }
 
-fn handle_output(output: &str, redirect: &Option<String>) {
+fn handle_output(output: &str, redirect: &Option<String>, redirect_mode: bool) {
     if let Some(file_path) = redirect {
-        std::fs::write(file_path, output).unwrap();
+        let mut hfile: File;
+        if redirect_mode {
+            hfile = std::fs::OpenOptions::new().create(true).append(true).open(file_path).unwrap();
+        } else {
+            hfile = std::fs::OpenOptions::new().create(true).write(true).open(file_path).unwrap();
+        }
+        hfile.write_all(output.as_bytes()).unwrap();
+        hfile.flush().unwrap();
     } else {
         println!("{}", output.trim());
     }
@@ -152,14 +175,20 @@ fn main() {
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut input).unwrap();
         // parse input into two sections
-        let (command, args, argument, redirect_stdout, redirect_stderr) = parse_input(&input);
+        let (command, args, argument, redirect_stdout, redirect_stdout_mode, redirect_stderr, redirect_stderr_mode) = parse_input(&input);
 
-        // we create the files for redirect no matter what
+        // we create the files if not exists for redirect no matter what
         if let Some(file_path) = &redirect_stdout {
-            std::fs::File::create(file_path).unwrap();
+            // println!("redirect_stdout: {}", file_path);
+            if !std::path::Path::new(file_path).exists() {
+                std::fs::File::create(file_path).unwrap();
+            }
         }
         if let Some(file_path) = &redirect_stderr {
-            std::fs::File::create(file_path).unwrap();
+            // println!("redirect_stderr: {}", file_path);
+            if !std::path::Path::new(file_path).exists() {
+                std::fs::File::create(file_path).unwrap();
+            }
         }
         
         match  command.as_str() {
@@ -167,23 +196,23 @@ fn main() {
                 exit(0)
             },
             "echo" => {
-                handle_output(&argument, &redirect_stdout);
+                handle_output(&format!("{}\n", argument), &redirect_stdout, redirect_stdout_mode);
             },
             "type" => {
                 if valid_commands_builtin.contains(&argument.as_str()) {
-                    let output = format!("{} is a shell builtin", argument);
-                    handle_output(&output, &redirect_stdout);
+                    let output = format!("{} is a shell builtin\n", argument);
+                    handle_output(&output, &redirect_stdout, redirect_stdout_mode);
                 } else if valid_commands_executables.contains_key(&argument) {
-                    let output = format!("{} is {}", argument, valid_commands_executables.get(&argument).unwrap());
-                    handle_output(&output, &redirect_stdout);
+                    let output = format!("{} is {}\n", argument, valid_commands_executables.get(&argument).unwrap());
+                    handle_output(&output, &redirect_stdout, redirect_stdout_mode);
                 } else {
-                    let output = format!("{}: not found", argument);
-                    handle_output(&output, &redirect_stdout);
+                    let output = format!("{}: not found\n", argument);
+                    handle_output(&output, &redirect_stdout, redirect_stdout_mode);
                 }
             },
             "pwd" => {
                 let current_dir = env::current_dir().unwrap();
-                handle_output(&current_dir.to_string_lossy(), &redirect_stdout);
+                handle_output(&format!("{}\n", current_dir.to_string_lossy()), &redirect_stdout, redirect_stdout_mode);
 
             },
             "cd" => {
@@ -195,8 +224,8 @@ fn main() {
                         env::set_current_dir(home_dir).unwrap();
                     }
                     else {
-                        let output = format!("cd: {}: No such file or directory", argument);
-                        handle_output(&output, &redirect_stdout);
+                        let output = format!("cd: {}: No such file or directory\n", argument);
+                        handle_output(&output, &redirect_stdout, redirect_stdout_mode);
                     }
                 }
             },
@@ -207,16 +236,16 @@ fn main() {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 if !stdout.is_empty() {
-                    handle_output(&stdout, &redirect_stdout);
+                    handle_output(&stdout, &redirect_stdout, redirect_stdout_mode);
                 }
                 if !stderr.is_empty() {
-                    handle_output(&stderr, &redirect_stderr);
+                    handle_output(&stderr, &redirect_stderr, redirect_stderr_mode);
                 }
 
             },
             _ => {
                 let output = format!("{}: command not found", input.trim());
-                handle_output(&output, &redirect_stdout);
+                handle_output(&output, &redirect_stdout, redirect_stdout_mode);
             }
         }
         input.clear(); // Clear the input buffer for the next command
