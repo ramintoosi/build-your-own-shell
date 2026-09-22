@@ -15,6 +15,8 @@ use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
 use rustyline::Helper;
 use rustyline::Editor;
+use rustyline::config::Config;
+use rustyline::CompletionType;
 
 /// autocomplete the command
 struct ShellCompleter;
@@ -46,6 +48,8 @@ impl Completer for ShellCompleter {
                 })
             }
         }
+        // sort matches by display
+        matches.sort_by(|a,b | a.display.cmp(&b.display));
         Ok((start, matches))
     }
 }
@@ -218,8 +222,11 @@ fn handle_output(output: &str, redirect: &Option<String>, redirect_mode: bool) {
 }
 
 fn main() {
+    let config = Config::builder()
+        .completion_type(CompletionType::List)
+        .build();
 
-    let mut rl = Editor::<ShellCompleter, rustyline::history::DefaultHistory>::new().unwrap();
+    let mut rl = Editor::<ShellCompleter, rustyline::history::DefaultHistory>::with_config(config).unwrap();
     rl.set_helper(Some(ShellCompleter));
 
     // Wait for user input
