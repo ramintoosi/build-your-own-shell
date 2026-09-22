@@ -33,10 +33,12 @@ impl Completer for ShellCompleter {
         let start = line_to_cursor.rfind(' ').map_or(0, |i| i + 1);
         let word = &line_to_cursor[start..];
 
-        let builtins = ["exit", "echo", "type", "pwd", "cd"];
+        let builtins = vec!["exit", "echo", "type", "pwd", "cd"];
+        let executables = get_path_executables();
+        let all_commands = [builtins, executables.keys().map(|k| k.as_str()).collect::<Vec<&str>>()].concat();
         let mut matches = Vec::new();
 
-        for &cmd in &builtins {
+        for &cmd in &all_commands {
             if cmd.starts_with(word) {
                 matches.push(Pair {
                     display: cmd.to_string(),
