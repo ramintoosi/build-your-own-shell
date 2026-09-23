@@ -42,16 +42,16 @@ repo without submitting. On first run it downloads the tester binary to
 `/tmp/shell-tester`.
 
 ```sh
-./run_tester.sh                 # default: redirections
-./run_tester.sh base            # early stages (init through run a program)
-./run_tester.sh redirections    # stdout/stderr redirect + append
-./run_tester.sh completions     # command completion (tab)
-./run_tester.sh all             # base + navigation + quoting + redirections
-./run_tester.sh el9             # a single stage by slug
+./run_tester.sh                 # every section
+./run_tester.sh all             # same
+./run_tester.sh quoting         # one section
 ```
+
+Sections, in course order: `basics`, `navigation`, `quoting`, `redirection`, `completion`, `pipelines`.
 
 Notes:
 
-- Stage `ei0` (PWD) is skipped in `all` because it uses `sudo` to rename
-  `/usr/bin/pwd`. Run that stage via `codecrafters submit` instead.
+- `basics` is the opening block on the course page (prompt through running a program). It has no section heading there.
+- The pwd stage inside Navigation is not included. It uses `sudo` to rename `/usr/bin/pwd`.
+  Run that stage via `codecrafters submit` instead.
 - A temporary `.tester-run/` copy of the repo is created during runs (gitignored).

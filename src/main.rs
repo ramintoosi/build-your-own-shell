@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use std::io::{self, Write};
+use std::io::{self, Write, Read};
 use std::os::unix::fs::PermissionsExt;
 use std::process::{exit};
 use std::{env};
@@ -17,6 +17,8 @@ use rustyline::Helper;
 use rustyline::Editor;
 use rustyline::config::Config;
 use rustyline::CompletionType;
+use std::process::{Stdio};
+use std::thread;
 
 /// autocomplete the command
 struct ShellCompleter;
@@ -217,7 +219,219 @@ fn handle_output(output: &str, redirect: &Option<String>, redirect_mode: bool) {
         hfile.write_all(output.as_bytes()).unwrap();
         hfile.flush().unwrap();
     } else {
-        println!("{}", output.trim());
+        print!("{}", output);
+        io::stdout().flush().unwrap();
+    }
+}
+
+fn spawn_command(
+    program: &str,
+    args: &[String],
+    previous_stdio: Option<Stdio>,
+) -> std::process::Child {
+    let mut cmd = Command::new(program);
+    cmd.args(args);
+
+    if let Some(stdout) = previous_stdio {
+        cmd.stdin(stdout);
+    }
+    
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+    cmd.spawn().unwrap()
+}
+
+fn stream_pipe<R: Read + Send + 'static>(
+    mut pipe: R,
+    redirect: Option<String>,
+    append: bool,
+) -> thread::JoinHandle<()> {
+    thread::spawn(move || {
+        let mut file = redirect.map(|path| {
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .append(append)
+                .truncate(!append)
+                .open(path)
+                .unwrap()
+        });
+
+        let mut buf = [0u8; 4096];
+        loop {
+            let n = pipe.read(&mut buf).unwrap();
+            if n == 0 {
+                break;
+            }
+            if let Some(f) = file.as_mut() {
+                f.write_all(&buf[..n]).unwrap();
+                f.flush().unwrap();
+            } else {
+                io::stdout().write_all(&buf[..n]).unwrap();
+                io::stdout().flush().unwrap();
+            }
+        }
+    })
+}
+
+fn output_pipe(text: &str) -> Stdio {
+    let (reader, mut writer) = std::io::pipe().unwrap();
+    writer.write_all(text.as_bytes()).unwrap();
+    drop(writer);
+    Stdio::from(reader)
+}
+
+fn command_executor(
+    command: &str, print_output: bool, 
+    previous_stdio: Option<Stdio>,
+    children: &mut Vec<std::process::Child>
+) -> Option<Stdio> {
+    
+    let valid_commands_builtin = vec!["exit", "echo", "type", "pwd", "cd"];
+    let valid_commands_executables = get_path_executables();
+
+    // parse input into two sections
+    let (command, args, argument, redirect_stdout, redirect_stdout_mode, redirect_stderr, redirect_stderr_mode) = parse_input(command);
+
+    // we create the files if not exists for redirect no matter what
+    if let Some(file_path) = &redirect_stdout {
+        // println!("redirect_stdout: {}", file_path);
+        if !std::path::Path::new(file_path).exists() {
+            std::fs::File::create(file_path).unwrap();
+        }
+    }
+    if let Some(file_path) = &redirect_stderr {
+        // println!("redirect_stderr: {}", file_path);
+        if !std::path::Path::new(file_path).exists() {
+            std::fs::File::create(file_path).unwrap();
+        }
+    }
+    
+    match  command.as_str() {
+        "exit" => {
+            exit(0)
+        },
+        "echo" => {
+            let text = format!("{}\n", argument);
+            if print_output {
+                handle_output(&text, &redirect_stdout, redirect_stdout_mode);
+                None
+            }
+            else {
+                Some(output_pipe(&text))
+            }
+            
+        },
+        "type" => {
+            let text = if valid_commands_builtin.contains(&argument.as_str()) {
+                format!("{} is a shell builtin\n", argument)
+            } else if valid_commands_executables.contains_key(&argument) {
+                format!("{} is {}\n", argument, valid_commands_executables.get(&argument).unwrap())
+            } else {
+                format!("{}: not found\n", argument)
+            };
+            if print_output {
+                handle_output(&text, &redirect_stdout, redirect_stdout_mode);
+                None
+            }
+            else {
+                Some(output_pipe(&text))
+            }
+        },
+        "pwd" => {
+            let current_dir = env::current_dir().unwrap();
+            if print_output {
+                handle_output(&format!("{}\n", current_dir.to_string_lossy()), &redirect_stdout, redirect_stdout_mode);
+                None
+            }
+            else {
+                Some(output_pipe(&format!("{}\n", current_dir.to_string_lossy())))
+            }
+
+        },
+        "cd" => {
+            if !argument.is_empty() {
+
+                if Path::new(&argument).exists() {
+                    env::set_current_dir(&argument).unwrap();
+                } else if argument.eq("~") {
+                    let home_dir = env::var("HOME").unwrap_or("".to_string());
+                    env::set_current_dir(home_dir).unwrap();
+                }
+                else {
+                    let output = format!("cd: {}: No such file or directory\n", argument);
+                    if print_output {
+                        handle_output(&output, &redirect_stdout, redirect_stdout_mode);
+                        return None;
+                    }
+                    else {
+                        return Some(output_pipe(&output));
+                    }
+                }
+            }
+            None
+        },
+        _ if valid_commands_executables.contains_key(&command) => {
+            // let mut output_command = String::new();
+            // let output = Command::new(command)
+            //     .args(args) // Pass the rest of the arguments
+            //     .output().unwrap();
+            // let mut child = Command::new(&command)
+            //     .args(args)
+            //     .stdin(Stdio::piped())
+            //     .stdout(Stdio::piped())
+            //     .stderr(Stdio::piped())
+            //     .spawn()
+            //     .unwrap();
+
+            // if let Some(mut stdin) = child.stdin.take() {
+            //     stdin.write_all(stdin_data.as_bytes()).unwrap();
+            // }
+
+            let mut child = spawn_command(&command, &args, previous_stdio);
+            
+            
+            if print_output {
+                let stdout_thread = child.stdout.take().map(|pipe| stream_pipe(pipe, redirect_stdout, redirect_stdout_mode));
+                let output = child.wait_with_output().unwrap();
+                if let Some(thread) = stdout_thread {
+                    thread.join().unwrap();
+                }
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                if !stderr.is_empty() {
+                    handle_output(&stderr, &redirect_stderr, redirect_stderr_mode);
+                }
+
+
+                // let output = child.wait_with_output().unwrap();
+                // let stdout = String::from_utf8_lossy(&output.stdout);
+                // let stderr = String::from_utf8_lossy(&output.stderr);
+                // if !stdout.is_empty() {
+                //     handle_output(&stdout, &redirect_stdout, redirect_stdout_mode);
+                // }
+                // if !stderr.is_empty() {
+                //     handle_output(&stderr, &redirect_stderr, redirect_stderr_mode);
+                // }
+                if print_output {
+                    None
+                } else {
+                    Some(output_pipe(""))
+                }
+            }
+            else {
+                let next_stdout = child.stdout.take().map(Stdio::from);
+                children.push(child);
+                next_stdout
+            }
+            
+        },
+        _ => {
+            let output = format!("{}: command not found\n", command.trim());
+            if print_output {
+                handle_output(&output, &redirect_stdout, redirect_stdout_mode);
+            }
+            None
+        }
     }
 }
 
@@ -232,88 +446,24 @@ fn main() {
     // Wait for user input
     let mut input: String;
 
-    let valid_commands_builtin = vec!["exit", "echo", "type", "pwd", "cd"];
-    let valid_commands_executables = get_path_executables();
-
     loop {
-        // print!("$ ");
-        // io::stdout().flush().unwrap();
-        // io::stdin().read_line(&mut input).unwrap();
+        
         input = rl.readline("$ ").unwrap();
-        // parse input into two sections
-        let (command, args, argument, redirect_stdout, redirect_stdout_mode, redirect_stderr, redirect_stderr_mode) = parse_input(&input);
 
-        // we create the files if not exists for redirect no matter what
-        if let Some(file_path) = &redirect_stdout {
-            // println!("redirect_stdout: {}", file_path);
-            if !std::path::Path::new(file_path).exists() {
-                std::fs::File::create(file_path).unwrap();
-            }
+        // handle pipelines
+        let pipelines = input.split(" | ").collect::<Vec<&str>>();
+        let mut children = Vec::new();
+        let mut previous_stdout = None;
+
+        for (index, command) in pipelines.iter().enumerate() {
+            let is_last = index == pipelines.len() - 1;
+            previous_stdout = command_executor(&command, is_last, previous_stdout, &mut children);
         }
-        if let Some(file_path) = &redirect_stderr {
-            // println!("redirect_stderr: {}", file_path);
-            if !std::path::Path::new(file_path).exists() {
-                std::fs::File::create(file_path).unwrap();
-            }
+
+        for mut child in children {
+            child.wait().unwrap();
         }
         
-        match  command.as_str() {
-            "exit" => {
-                exit(0)
-            },
-            "echo" => {
-                handle_output(&format!("{}\n", argument), &redirect_stdout, redirect_stdout_mode);
-            },
-            "type" => {
-                if valid_commands_builtin.contains(&argument.as_str()) {
-                    let output = format!("{} is a shell builtin\n", argument);
-                    handle_output(&output, &redirect_stdout, redirect_stdout_mode);
-                } else if valid_commands_executables.contains_key(&argument) {
-                    let output = format!("{} is {}\n", argument, valid_commands_executables.get(&argument).unwrap());
-                    handle_output(&output, &redirect_stdout, redirect_stdout_mode);
-                } else {
-                    let output = format!("{}: not found\n", argument);
-                    handle_output(&output, &redirect_stdout, redirect_stdout_mode);
-                }
-            },
-            "pwd" => {
-                let current_dir = env::current_dir().unwrap();
-                handle_output(&format!("{}\n", current_dir.to_string_lossy()), &redirect_stdout, redirect_stdout_mode);
-
-            },
-            "cd" => {
-                if !argument.is_empty() {
-                    if Path::new(&argument).exists() {
-                        env::set_current_dir(&argument).unwrap();
-                    } else if argument.eq("~") {
-                        let home_dir = env::var("HOME").unwrap_or("".to_string());
-                        env::set_current_dir(home_dir).unwrap();
-                    }
-                    else {
-                        let output = format!("cd: {}: No such file or directory\n", argument);
-                        handle_output(&output, &redirect_stdout, redirect_stdout_mode);
-                    }
-                }
-            },
-            _ if valid_commands_executables.contains_key(&command) => {
-                let output = Command::new(command)
-                    .args(args) // Pass the rest of the arguments
-                    .output().unwrap();
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                if !stdout.is_empty() {
-                    handle_output(&stdout, &redirect_stdout, redirect_stdout_mode);
-                }
-                if !stderr.is_empty() {
-                    handle_output(&stderr, &redirect_stderr, redirect_stderr_mode);
-                }
-
-            },
-            _ => {
-                let output = format!("{}: command not found", input.trim());
-                handle_output(&output, &redirect_stdout, redirect_stdout_mode);
-            }
-        }
         input.clear(); // Clear the input buffer for the next command
     }
 
