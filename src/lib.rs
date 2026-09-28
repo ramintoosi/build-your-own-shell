@@ -4,10 +4,11 @@ mod executor;
 mod parser;
 mod path;
 mod redirect;
+mod history;
 
 use completer::ShellCompleter;
-
 use executor::command_executor;
+use history::add_to_history;
 
 use rustyline::config::Config;
 use rustyline::CompletionType;
@@ -27,7 +28,9 @@ pub fn run() {
 
     loop {
         input = rl.readline("$ ").unwrap();
-
+        
+        add_to_history(&input);
+        
         // handle pipelines
         let pipelines = input.split(" | ").collect::<Vec<&str>>();
         let mut children = Vec::new();

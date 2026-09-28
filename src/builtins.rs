@@ -3,6 +3,7 @@ use std::env;
 use std::process::{exit, Stdio};
 
 use crate::redirect::{handle_output, output_pipe};
+use crate::history::format_history;
 
 pub(crate) const BUILTINS: [&str; 6] = ["exit", "echo", "type", "pwd", "cd", "history"];
 
@@ -51,6 +52,18 @@ pub(crate) fn run_builtin(
                 }
             }
             Some(None)
+        }
+        "history" => {
+            let history: String;
+            if argument.is_empty() {
+                history = format_history(None);
+            }
+            else {
+                let index = argument.parse::<usize>().unwrap();
+                history = format_history(Some(index));
+            }
+            
+            Some(emit(&history, print_output, stdout_path, stdout_append))
         }
         _ => None, // not a builtin
     }
