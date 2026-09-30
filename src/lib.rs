@@ -30,6 +30,7 @@ pub fn run() {
         input = rl.readline("$ ").unwrap();
         
         add_to_history(&input);
+        rl.add_history_entry(&input).unwrap();
         
         // handle pipelines
         let pipelines = input.split(" | ").collect::<Vec<&str>>();
