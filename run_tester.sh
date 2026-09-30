@@ -28,7 +28,7 @@ fi
 # heading on the site; here it is "basics".
 # ei0 (The pwd builtin) is left out of navigation: that test uses sudo to
 # rename /usr/bin/pwd.
-SECTIONS=(basics navigation quoting redirection completion pipelines history)
+SECTIONS=(basics navigation quoting redirection completion pipelines history history-persistence)
 
 slugs_for() {
   case "$1" in
@@ -39,6 +39,7 @@ slugs_for() {
     completion) echo "qp2 gm9 qm8 gy5 wh6 wt6" ;;
     pipelines) echo "br6 ny9 xk3" ;;
     history) echo "bq4 yf5 ag6 rh7 vq0 dm2" ;;
+    history-persistence) echo "za2 in3 sx3 zp4 kz7" ;;
   esac
 }
 
@@ -80,6 +81,11 @@ title_for() {
     rh7) echo "Up-arrow navigation" ;;
     vq0) echo "Down-arrow navigation" ;;
     dm2) echo "Executing commands from history" ;;
+    za2) echo "Read history from file" ;;
+    in3) echo "Write history to file" ;;
+    sx3) echo "Append history to file" ;;
+    zp4) echo "Read history on startup" ;;
+    kz7) echo "Write history on exit" ;;
     *) echo "Stage $1" ;;
   esac
 }
@@ -107,6 +113,7 @@ normalize_section() {
     completion|completions|"command completion") echo completion ;;
     pipeline|pipelines) echo pipelines ;;
     history) echo history ;;
+    history-persistence|history_persistence|persistence) echo history-persistence ;;
     *) return 1 ;;
   esac
 }
