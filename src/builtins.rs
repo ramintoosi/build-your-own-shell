@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::env;
 use std::process::{exit, Stdio};
 
+use crate::history::{format_history, load_history, save_history, save_history_on_exit};
 use crate::redirect::{handle_output, output_pipe};
-use crate::history::format_history;
 
 pub(crate) const BUILTINS: [&str; 6] = ["exit", "echo", "type", "pwd", "cd", "history"];
 
@@ -18,12 +18,15 @@ pub(crate) fn run_builtin(
     stdout_path: &Option<String>,
     stdout_append: bool,
     executables: &HashMap<String, String>,
-) -> Option<Option<Stdio>> {
+) -> Option<Stdio> {
     match command {
-        "exit" => exit(0),
+        "exit" => {
+            save_history_on_exit();
+            exit(0)
+        }
         "echo" => {
             let text = format!("{}\n", argument);
-            Some(emit(&text, print_output, stdout_path, stdout_append))
+            emit(&text, print_output, stdout_path, stdout_append)
         }
         "type" => {
             let text = if is_builtin(argument) {
@@ -33,11 +36,11 @@ pub(crate) fn run_builtin(
             } else {
                 format!("{}: not found\n", argument)
             };
-            Some(emit(&text, print_output, stdout_path, stdout_append))
+            emit(&text, print_output, stdout_path, stdout_append)
         }
         "pwd" => {
             let text = format!("{}\n", env::current_dir().unwrap().to_string_lossy());
-            Some(emit(&text, print_output, stdout_path, stdout_append))
+            emit(&text, print_output, stdout_path, stdout_append)
         }
         "cd" => {
             if !argument.is_empty() {
@@ -48,22 +51,33 @@ pub(crate) fn run_builtin(
                     env::set_current_dir(home).unwrap();
                 } else {
                     let output = format!("cd: {}: No such file or directory\n", argument);
-                    return Some(emit(&output, print_output, stdout_path, stdout_append));
+                    return emit(&output, print_output, stdout_path, stdout_append);
                 }
             }
-            Some(None)
+            None
         }
         "history" => {
             let history: String;
             if argument.is_empty() {
                 history = format_history(None);
-            }
-            else {
+                emit(&history, print_output, stdout_path, stdout_append)
+            } else if argument.starts_with("-r") {
+                let file_path = argument.split_at(3).1;
+                load_history(file_path);
+                None
+            } else if argument.starts_with("-w") {
+                let file_path = argument.split_at(3).1;
+                save_history(file_path, false);
+                None
+            } else if argument.starts_with("-a") {
+                let file_path = argument.split_at(3).1;
+                save_history(file_path, true);
+                None
+            } else {
                 let index = argument.parse::<usize>().unwrap();
                 history = format_history(Some(index));
+                emit(&history, print_output, stdout_path, stdout_append)
             }
-            
-            Some(emit(&history, print_output, stdout_path, stdout_append))
         }
         _ => None, // not a builtin
     }

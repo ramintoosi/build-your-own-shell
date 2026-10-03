@@ -1,14 +1,14 @@
 mod builtins;
 mod completer;
 mod executor;
+mod history;
 mod parser;
 mod path;
 mod redirect;
-mod history;
 
 use completer::ShellCompleter;
 use executor::command_executor;
-use history::add_to_history;
+use history::{add_to_history, load_history_on_startup};
 
 use rustyline::config::Config;
 use rustyline::CompletionType;
@@ -23,15 +23,17 @@ pub fn run() {
         Editor::<ShellCompleter, rustyline::history::DefaultHistory>::with_config(config).unwrap();
     rl.set_helper(Some(ShellCompleter));
 
+    load_history_on_startup();
+
     // Wait for user input
     let mut input: String;
 
     loop {
         input = rl.readline("$ ").unwrap();
-        
+
         add_to_history(&input);
         rl.add_history_entry(&input).unwrap();
-        
+
         // handle pipelines
         let pipelines = input.split(" | ").collect::<Vec<&str>>();
         let mut children = Vec::new();

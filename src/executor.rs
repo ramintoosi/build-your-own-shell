@@ -69,7 +69,7 @@ pub(crate) fn command_executor(
                 stdout_append,
                 &valid_commands_executables,
             );
-            result.unwrap()
+            result
         }
         _ if valid_commands_executables.contains_key(&parsed_command.command) => {
             let mut child = spawn_command(
