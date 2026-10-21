@@ -28,7 +28,7 @@ fi
 # heading on the site; here it is "basics".
 # ei0 (The pwd builtin) is left out of navigation: that test uses sudo to
 # rename /usr/bin/pwd.
-SECTIONS=(basics navigation quoting redirection completion filename-completion pipelines history history-persistence)
+SECTIONS=(basics navigation quoting redirection completion filename-completion pipelines background-jobs history history-persistence)
 
 slugs_for() {
   case "$1" in
@@ -39,6 +39,7 @@ slugs_for() {
     completion) echo "qp2 gm9 qm8 gy5 wh6 wt6" ;;
     filename-completion) echo "zv2 ue6 lc6 vs5 no5 jp8 bf8" ;;
     pipelines) echo "br6 ny9 xk3" ;;
+    background-jobs) echo "af3 at7 si2 jd6 dk5 ma9 rq2 bv8 fy4" ;;
     history) echo "bq4 yf5 ag6 rh7 vq0 dm2" ;;
     history-persistence) echo "za2 in3 sx3 zp4 kz7" ;;
   esac
@@ -83,6 +84,15 @@ title_for() {
     br6) echo "Dual-command pipeline" ;;
     ny9) echo "Pipelines with built-ins" ;;
     xk3) echo "Multi-command pipelines" ;;
+    af3) echo "The jobs builtin" ;;
+    at7) echo "Starting background jobs" ;;
+    si2) echo "Printing background job output" ;;
+    jd6) echo "List a single job" ;;
+    dk5) echo "List multiple jobs" ;;
+    ma9) echo "Reap one job" ;;
+    rq2) echo "Reap multiple jobs" ;;
+    bv8) echo "Reap before the next prompt" ;;
+    fy4) echo "Recycle job numbers" ;;
     bq4) echo "The history builtin" ;;
     yf5) echo "Listing history" ;;
     ag6) echo "Limiting history entries" ;;
@@ -121,6 +131,7 @@ normalize_section() {
     completion|completions|"command completion") echo completion ;;
     filename-completion|filename_completion|filename|"file completion") echo filename-completion ;;
     pipeline|pipelines) echo pipelines ;;
+    background-jobs|background_jobs|background|jobs) echo background-jobs ;;
     history) echo history ;;
     history-persistence|history_persistence|persistence) echo history-persistence ;;
     *) return 1 ;;

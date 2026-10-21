@@ -5,7 +5,7 @@ use std::process::{exit, Stdio};
 use crate::history::{format_history, load_history, save_history, save_history_on_exit};
 use crate::redirect::{handle_output, output_pipe};
 
-pub(crate) const BUILTINS: [&str; 6] = ["exit", "echo", "type", "pwd", "cd", "history"];
+pub(crate) const BUILTINS: [&str; 7] = ["exit", "echo", "type", "pwd", "cd", "history", "jobs"];
 
 pub(crate) fn is_builtin(command: &str) -> bool {
     BUILTINS.contains(&command)
@@ -79,6 +79,7 @@ pub(crate) fn run_builtin(
                 emit(&history, print_output, stdout_path, stdout_append)
             }
         }
+        "jobs" => {None}
         _ => None, // not a builtin
     }
 }
