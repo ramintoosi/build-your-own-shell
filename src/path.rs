@@ -35,7 +35,6 @@ pub(crate) fn get_path_executables() -> HashMap<String, String> {
     executables
 }
 
-
 /// Get the list of files and folders in the current directory
 pub(crate) fn get_directory_files_and_folders(requested_path: Option<&str>) -> Vec<String> {
     let path = requested_path.unwrap_or(".");
@@ -44,12 +43,22 @@ pub(crate) fn get_directory_files_and_folders(requested_path: Option<&str>) -> V
         return Vec::new();
     }
     let files = std::fs::read_dir(path).unwrap();
-    files.map(|file| {
-        if requested_path.is_some() {
-            return file.unwrap().path().display().to_string()
-        }
-        else {
-            return file.unwrap().file_name().to_str().unwrap().to_string();
-        }
-    }).collect()
+    files
+        .map(|file| {
+            let entry = file.unwrap();
+            if entry.path().is_dir() {
+                if requested_path.is_some() {
+                    return format!("{}/", entry.path().display().to_string());
+                } else {
+                    return format!("{}/", entry.file_name().to_str().unwrap().to_string());
+                }
+            } else {
+                if requested_path.is_some() {
+                    return entry.path().display().to_string();
+                } else {
+                    return entry.file_name().to_str().unwrap().to_string();
+                }
+            }
+        })
+        .collect()
 }
