@@ -46,9 +46,10 @@ repo without submitting. On first run it downloads the tester binary to
 ./run_tester.sh all             # same
 ./run_tester.sh quoting         # one section
 ./run_tester.sh history-persistence
+./run_tester.sh filename-completion
 ```
 
-Sections, in course order: `basics`, `navigation`, `quoting`, `redirection`, `completion`, `pipelines`, `history`, `history-persistence`.
+Sections, in course order: `basics`, `navigation`, `quoting`, `redirection`, `completion`, `filename-completion`, `pipelines`, `history`, `history-persistence`.
 
 Notes:
 
@@ -56,4 +57,5 @@ Notes:
 - The pwd stage inside Navigation is not included. It uses `sudo` to rename `/usr/bin/pwd`.
   Run that stage via `codecrafters submit` instead.
 - `history-persistence` covers `history -r` / `-w` / `-a`, plus load-on-startup and save-on-exit via `HISTFILE`.
+- `filename-completion` covers tab-completing files and directories (including nested paths, multiple matches, and partial completions).
 - A temporary `.tester-run/` copy of the repo is created during runs (gitignored).

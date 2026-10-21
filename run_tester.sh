@@ -28,7 +28,7 @@ fi
 # heading on the site; here it is "basics".
 # ei0 (The pwd builtin) is left out of navigation: that test uses sudo to
 # rename /usr/bin/pwd.
-SECTIONS=(basics navigation quoting redirection completion pipelines history history-persistence)
+SECTIONS=(basics navigation quoting redirection completion filename-completion pipelines history history-persistence)
 
 slugs_for() {
   case "$1" in
@@ -37,6 +37,7 @@ slugs_for() {
     quoting) echo "ni6 tg6 yt5 le5 gu3 qj0" ;;
     redirection) echo "jv1 vz4 el9 un3" ;;
     completion) echo "qp2 gm9 qm8 gy5 wh6 wt6" ;;
+    filename-completion) echo "zv2 ue6 lc6 vs5 no5 jp8 bf8" ;;
     pipelines) echo "br6 ny9 xk3" ;;
     history) echo "bq4 yf5 ag6 rh7 vq0 dm2" ;;
     history-persistence) echo "za2 in3 sx3 zp4 kz7" ;;
@@ -72,6 +73,13 @@ title_for() {
     gy5) echo "Executable completion" ;;
     wh6) echo "Multiple completions" ;;
     wt6) echo "Partial completions" ;;
+    zv2) echo "File completion" ;;
+    ue6) echo "Nested file completion" ;;
+    lc6) echo "Directory completion" ;;
+    vs5) echo "Missing completions" ;;
+    no5) echo "Multiple matches" ;;
+    jp8) echo "Partial completions" ;;
+    bf8) echo "Multi-argument completions" ;;
     br6) echo "Dual-command pipeline" ;;
     ny9) echo "Pipelines with built-ins" ;;
     xk3) echo "Multi-command pipelines" ;;
@@ -111,6 +119,7 @@ normalize_section() {
     quoting) echo quoting ;;
     redirection|redirections) echo redirection ;;
     completion|completions|"command completion") echo completion ;;
+    filename-completion|filename_completion|filename|"file completion") echo filename-completion ;;
     pipeline|pipelines) echo pipelines ;;
     history) echo history ;;
     history-persistence|history_persistence|persistence) echo history-persistence ;;

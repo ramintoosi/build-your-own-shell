@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use rustyline::completion::{Completer, Pair};
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
@@ -7,8 +9,7 @@ use rustyline::Helper;
 use rustyline::Result;
 
 use crate::builtins::BUILTINS;
-use crate::path::get_path_executables;
-
+use crate::path::{get_directory_files_and_folders, get_path_executables};
 /// autocomplete the command
 pub(crate) struct ShellCompleter;
 
@@ -22,8 +23,11 @@ impl Completer for ShellCompleter {
         let word = &line_to_cursor[start..];
 
         let executables = get_path_executables();
+
+        let files = get_directory_files_and_folders(get_path_from_word(word));
         let all_commands = [
             BUILTINS.to_vec(),
+            files.iter().map(|f| f.as_str()).collect::<Vec<&str>>(),
             executables
                 .keys()
                 .map(|k| k.as_str())
@@ -57,3 +61,13 @@ impl Hinter for ShellCompleter {
 }
 impl Validator for ShellCompleter {}
 impl Helper for ShellCompleter {}
+
+
+fn get_path_from_word(word: &str) -> Option<&str> {
+    if let Some(pos) = word.rfind('/') {
+        return Some(&word[..pos]);
+    }
+    else {
+        return None;
+    }
+}
