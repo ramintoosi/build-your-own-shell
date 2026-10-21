@@ -22,30 +22,18 @@ impl Completer for ShellCompleter {
         let start = line_to_cursor.rfind(' ').map_or(0, |i| i + 1);
         let word = &line_to_cursor[start..];
 
-        let executables: HashMap<String, String> = if start == 0 {
-            get_path_executables()
-        } else {
-            HashMap::new()
-        };
-
         let files = get_directory_files_and_folders(get_path_from_word(word));
-        let mut all_commands = if start == 0 {
-            BUILTINS.to_vec()
-        } else {
-            Vec::new()
-        };
-        all_commands = [
-            all_commands,    
-            files.iter().map(|f| f.as_str()).collect::<Vec<&str>>(),
-            executables
-                .keys()
-                .map(|k| k.as_str())
-                .collect::<Vec<&str>>(),
-        ]
-        .concat();
+
+        let mut all_commands = files;
+        // let executables: HashMap<String, String>;
+        if start == 0 {
+            let executables = get_path_executables();
+            all_commands.extend(BUILTINS.iter().map(|s| s.to_string()));
+            all_commands.extend(executables.into_keys());
+        }
         let mut matches = Vec::new();
 
-        for &cmd in &all_commands {
+        for cmd in all_commands {
             if cmd.starts_with(word) {
                 matches.push(Pair {
                     display: cmd.to_string(),
@@ -76,9 +64,5 @@ impl Validator for ShellCompleter {}
 impl Helper for ShellCompleter {}
 
 fn get_path_from_word(word: &str) -> Option<&str> {
-    if let Some(pos) = word.rfind('/') {
-        return Some(&word[..pos]);
-    } else {
-        return None;
-    }
+    word.rfind('/').map(|pos| &word[..pos])
 }

@@ -46,19 +46,15 @@ pub(crate) fn get_directory_files_and_folders(requested_path: Option<&str>) -> V
     files
         .map(|file| {
             let entry = file.unwrap();
-            if entry.path().is_dir() {
-                if requested_path.is_some() {
-                    return format!("{}/", entry.path().display().to_string());
-                } else {
-                    return format!("{}/", entry.file_name().to_str().unwrap().to_string());
-                }
+            let mut name = if let Some(_) = requested_path {
+                entry.path().display().to_string()
             } else {
-                if requested_path.is_some() {
-                    return entry.path().display().to_string();
-                } else {
-                    return entry.file_name().to_str().unwrap().to_string();
-                }
+                entry.file_name().to_string_lossy().into_owned()
+            };
+            if entry.path().is_dir() {
+                name.push('/');
             }
+            name
         })
         .collect()
 }
