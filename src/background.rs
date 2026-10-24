@@ -5,6 +5,8 @@ This module is responsible for managing background processes.
 use std::process::Child;
 use std::sync::Mutex;
 
+use crate::background;
+
 struct Process {
     command: String,
     child: Child,
@@ -37,6 +39,7 @@ pub(crate) fn add_to_background(child: Child, command: String) {
 
 pub(crate) fn print_background_processes() -> String {
     let mut background = store().lock().unwrap();
+    let length = background.processes.len();
     let mut out_text = String::new();
     for (index, process) in background.processes.iter_mut().enumerate() {
         let is_running = match process.child.try_wait() {
@@ -44,9 +47,18 @@ pub(crate) fn print_background_processes() -> String {
             Ok(None) => "Running",
             Err(_) => "Error",
         };
+        // a 0, 1, 2 variable that shows if its last, second last, or not
+        let sign = if index == length - 1 {
+            "+"
+        } else if index == length - 2 {
+            "-"
+        } else {
+            ""
+        };
         out_text.push_str(&format!(
-            "[{}]+  {}\t{}\n",
+            "[{}]{}  {}\t{}\n",
             index + 1,
+            sign,
             is_running,
             process.command
         ));
