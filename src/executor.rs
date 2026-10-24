@@ -4,8 +4,8 @@ use std::process::Stdio;
 use crate::builtins::{is_builtin, run_builtin};
 use crate::parser::parse_input;
 use crate::path::get_path_executables;
+use crate::redirect::handle_output;
 use crate::redirect::stream_pipe;
-use crate::redirect::{handle_output, output_pipe};
 
 fn spawn_command(
     program: &str,
@@ -29,6 +29,7 @@ pub(crate) fn command_executor(
     print_output: bool,
     previous_stdio: Option<Stdio>,
     children: &mut Vec<std::process::Child>,
+    background: bool,
 ) -> Option<Stdio> {
     let valid_commands_executables = get_path_executables();
 
@@ -83,6 +84,10 @@ pub(crate) fn command_executor(
                     .stdout
                     .take()
                     .map(|pipe| stream_pipe(pipe, stdout_path, stdout_append));
+                if background {
+                    children.push(child);
+                    return None;
+                }
                 let output = child.wait_with_output().unwrap();
                 if let Some(thread) = stdout_thread {
                     thread.join().unwrap();
@@ -92,11 +97,7 @@ pub(crate) fn command_executor(
                     handle_output(&stderr, &stderr_path, stderr_append);
                 }
 
-                if print_output {
-                    None
-                } else {
-                    Some(output_pipe(""))
-                }
+                None
             } else {
                 let next_stdout = child.stdout.take().map(Stdio::from);
                 children.push(child);

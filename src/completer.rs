@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use rustyline::completion::{Completer, Pair};
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;

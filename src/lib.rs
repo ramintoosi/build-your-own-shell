@@ -1,3 +1,4 @@
+mod background;
 mod builtins;
 mod completer;
 mod executor;
@@ -5,7 +6,7 @@ mod history;
 mod parser;
 mod path;
 mod redirect;
-
+use background::{add_to_background, get_length_of_background_processes};
 use completer::ShellCompleter;
 use executor::command_executor;
 use history::{add_to_history, load_history_on_startup};
@@ -38,12 +39,37 @@ pub fn run() {
         let pipelines = input.split(" | ").collect::<Vec<&str>>();
         let mut children = Vec::new();
         let mut previous_stdout = None;
-
+        
         for (index, command) in pipelines.iter().enumerate() {
-            let is_last = index == pipelines.len() - 1;
-            previous_stdout = command_executor(&command, is_last, previous_stdout, &mut children);
-        }
 
+            let command_original = Some(command.to_string());
+            
+            // check if the command is a background process
+            let background = command.trim_end().ends_with('&');
+            let command = if background {
+                command.trim_end().trim_end_matches('&').trim()
+            } else {
+                command
+            };
+
+            let is_last = index == pipelines.len() - 1;
+            previous_stdout = command_executor(
+                &command,
+                is_last,
+                previous_stdout,
+                &mut children,
+                background,
+            );
+            if background {
+                let child = children.pop().unwrap();
+                println!(
+                    "[{}] {}",
+                    get_length_of_background_processes() + 1,
+                    child.id()
+                );
+                add_to_background(child, command_original.unwrap());
+            }
+        }
         for mut child in children {
             child.wait().unwrap();
         }

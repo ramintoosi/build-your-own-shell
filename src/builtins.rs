@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::env;
 use std::process::{exit, Stdio};
 
+use crate::background::print_background_processes;
 use crate::history::{format_history, load_history, save_history, save_history_on_exit};
 use crate::redirect::{handle_output, output_pipe};
 
@@ -79,7 +80,15 @@ pub(crate) fn run_builtin(
                 emit(&history, print_output, stdout_path, stdout_append)
             }
         }
-        "jobs" => {None}
+        "jobs" => {
+            let background_processes = print_background_processes();
+            emit(
+                &background_processes,
+                print_output,
+                stdout_path,
+                stdout_append,
+            )
+        }
         _ => None, // not a builtin
     }
 }
