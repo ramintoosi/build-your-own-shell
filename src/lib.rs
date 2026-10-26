@@ -30,8 +30,6 @@ pub fn run() {
     let mut input: String;
 
     loop {
-
-
         let finished_jobs = notify_finished_jobs();
         if !finished_jobs.is_empty() {
             print!("{}", finished_jobs);
@@ -45,9 +43,8 @@ pub fn run() {
         let pipelines = input.split(" | ").collect::<Vec<&str>>();
         let mut children = Vec::new();
         let mut previous_stdout = None;
-        
-        for (index, command) in pipelines.iter().enumerate() {
 
+        for (index, command) in pipelines.iter().enumerate() {
             let command_original = Some(command.to_string());
 
             // check if the command is a background process
@@ -68,12 +65,9 @@ pub fn run() {
             );
             if background {
                 let child = children.pop().unwrap();
-                println!(
-                    "[{}] {}",
-                    get_length_of_background_processes() + 1,
-                    child.id()
-                );
+                let child_id = child.id();
                 add_to_background(child, command_original.unwrap());
+                println!("[{}] {}", get_length_of_background_processes(), child_id);
             }
         }
         for mut child in children {
