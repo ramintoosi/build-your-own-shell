@@ -6,7 +6,7 @@ mod history;
 mod parser;
 mod path;
 mod redirect;
-use background::{add_to_background, get_length_of_background_processes};
+use background::{add_to_background, get_length_of_background_processes, notify_finished_jobs};
 use completer::ShellCompleter;
 use executor::command_executor;
 use history::{add_to_history, load_history_on_startup};
@@ -30,6 +30,12 @@ pub fn run() {
     let mut input: String;
 
     loop {
+
+
+        let finished_jobs = notify_finished_jobs();
+        if !finished_jobs.is_empty() {
+            print!("{}", finished_jobs);
+        }
         input = rl.readline("$ ").unwrap();
 
         add_to_history(&input);
@@ -43,7 +49,7 @@ pub fn run() {
         for (index, command) in pipelines.iter().enumerate() {
 
             let command_original = Some(command.to_string());
-            
+
             // check if the command is a background process
             let background = command.trim_end().ends_with('&');
             let command = if background {
