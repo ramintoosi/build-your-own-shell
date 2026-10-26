@@ -48,9 +48,10 @@ repo without submitting. On first run it downloads the tester binary to
 ./run_tester.sh background-jobs
 ./run_tester.sh history-persistence
 ./run_tester.sh filename-completion
+./run_tester.sh programmable-completion
 ```
 
-Sections, in course order: `basics`, `navigation`, `quoting`, `redirection`, `completion`, `filename-completion`, `pipelines`, `background-jobs`, `history`, `history-persistence`.
+Sections, in course order: `basics`, `navigation`, `quoting`, `redirection`, `completion`, `filename-completion`, `programmable-completion`, `pipelines`, `background-jobs`, `history`, `history-persistence`.
 
 Notes:
 
@@ -59,5 +60,6 @@ Notes:
   Run that stage via `codecrafters submit` instead.
 - `history-persistence` covers `history -r` / `-w` / `-a`, plus load-on-startup and save-on-exit via `HISTFILE`.
 - `filename-completion` covers tab-completing files and directories (including nested paths, multiple matches, and partial completions).
+- `programmable-completion` covers the `complete` builtin (`-p`, `-C`, `-r`) and invoking external completer scripts for tab completion.
 - `background-jobs` covers the `jobs` builtin, launching with `&`, printing job output, listing, reaping, and recycling job numbers.
 - A temporary `.tester-run/` copy of the repo is created during runs (gitignored).

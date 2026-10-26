@@ -28,7 +28,7 @@ fi
 # heading on the site; here it is "basics".
 # ei0 (The pwd builtin) is left out of navigation: that test uses sudo to
 # rename /usr/bin/pwd.
-SECTIONS=(basics navigation quoting redirection completion filename-completion pipelines background-jobs history history-persistence)
+SECTIONS=(basics navigation quoting redirection completion filename-completion programmable-completion pipelines background-jobs history history-persistence)
 
 slugs_for() {
   case "$1" in
@@ -38,6 +38,7 @@ slugs_for() {
     redirection) echo "jv1 vz4 el9 un3" ;;
     completion) echo "qp2 gm9 qm8 gy5 wh6 wt6" ;;
     filename-completion) echo "zv2 ue6 lc6 vs5 no5 jp8 bf8" ;;
+    programmable-completion) echo "ne7 oi7 wl6 pm5 qf1 zi0 nr7 ep2 xz3 tz2" ;;
     pipelines) echo "br6 ny9 xk3" ;;
     background-jobs) echo "af3 at7 si2 jd6 dk5 ma9 rq2 bv8 fy4" ;;
     history) echo "bq4 yf5 ag6 rh7 vq0 dm2" ;;
@@ -81,6 +82,16 @@ title_for() {
     no5) echo "Multiple matches" ;;
     jp8) echo "Partial completions" ;;
     bf8) echo "Multi-argument completions" ;;
+    ne7) echo "Register complete builtin" ;;
+    oi7) echo "Printing missing specifications" ;;
+    wl6) echo "Displaying registered specifications" ;;
+    pm5) echo "Single completion" ;;
+    qf1) echo "Handling no completions" ;;
+    zi0) echo "Passing command-line arguments" ;;
+    nr7) echo "Passing environment variables" ;;
+    ep2) echo "Multiple completer candidates" ;;
+    xz3) echo "Longest common prefix" ;;
+    tz2) echo "Unregister a completion" ;;
     br6) echo "Dual-command pipeline" ;;
     ny9) echo "Pipelines with built-ins" ;;
     xk3) echo "Multi-command pipelines" ;;
@@ -130,6 +141,7 @@ normalize_section() {
     redirection|redirections) echo redirection ;;
     completion|completions|"command completion") echo completion ;;
     filename-completion|filename_completion|filename|"file completion") echo filename-completion ;;
+    programmable-completion|programmable_completion|programmable|"programmable completion") echo programmable-completion ;;
     pipeline|pipelines) echo pipelines ;;
     background-jobs|background_jobs|background|jobs) echo background-jobs ;;
     history) echo history ;;
