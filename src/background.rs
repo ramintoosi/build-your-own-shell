@@ -39,9 +39,11 @@ pub(crate) fn add_to_background(child: Child, command: String) {
 
 pub(crate) fn print_background_processes() -> String {
     let mut background = store().lock().unwrap();
-    let length = background.processes.len();
+    
     let mut out_text = String::new();
     // let mut processes_to_remove = Vec::new();
+
+    let mut output_vec: Vec<Vec<String>> = Vec::new();
 
     for (index, process) in background.processes.iter_mut().enumerate() {
         
@@ -54,7 +56,25 @@ pub(crate) fn print_background_processes() -> String {
             Ok(None) => "Running",
             Err(_) => "Error",
         };
-        // A 0, 1, 2 variable that shows if its last, second last, or not
+
+        let command_to_print = if is_running == "Done" {
+            process.is_done = true;
+            process.command.trim_end().trim_end_matches('&').trim_end()
+        } else {
+            &process.command
+        };
+
+        output_vec.push(vec![
+            (index + 1).to_string(),
+            is_running.to_string(),
+            command_to_print.to_string(),
+        ]);
+
+    }
+
+    let length = output_vec.len();
+
+    for (index, row) in output_vec.iter().enumerate() {
         let sign = if index == length - 1 {
             "+"
         } else if index == length - 2 {
@@ -62,19 +82,8 @@ pub(crate) fn print_background_processes() -> String {
         } else {
             ""
         };
-        let command_to_print = if is_running == "Done" {
-            process.is_done = true;
-            process.command.trim_end().trim_end_matches('&').trim_end()
-        } else {
-            &process.command
-        };
-        out_text.push_str(&format!(
-            "[{}]{}  {}\t{}\n",
-            index + 1,
-            sign,
-            is_running,
-            command_to_print,
-        ));
+
+        out_text.push_str(&format!("[{}]{}  {}\t{}\n", row[0], sign, row[1], row[2]));
     }
     
     out_text
