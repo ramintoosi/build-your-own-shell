@@ -3,7 +3,9 @@ use std::env;
 use std::process::{exit, Stdio};
 
 use crate::background::print_background_processes;
-use crate::external_completers::{add_external_completer, check_if_external_completer_exists, unregister_external_completer};
+use crate::external_completers::{
+    add_external_completer, check_if_external_completer_exists, unregister_external_completer,
+};
 use crate::history::{format_history, load_history, save_history, save_history_on_exit};
 use crate::redirect::{handle_output, output_pipe};
 
