@@ -22,9 +22,14 @@ pub(crate) fn add_external_completer(command: &str, path: &str) {
         .insert(command.to_string(), path.to_string());
 }
 
-pub(crate) fn run_external_completer(command: &str) -> Vec<String> {
+pub(crate) fn run_external_completer(command: &str, last_arg: &str, prev_arg: &str) -> Vec<String> {
     if let Some(path) = check_if_external_completer_exists(command) {
-        let output = Command::new(path).arg(command).output().unwrap();
+        let output = Command::new(path)
+            .arg(command)
+            .arg(last_arg)
+            .arg(prev_arg)
+            .output()
+            .unwrap();
         let output_string = String::from_utf8(output.stdout).unwrap();
         return output_string
             .split('\n')

@@ -31,9 +31,13 @@ impl Completer for ShellCompleter {
             all_commands.extend(executables.into_keys());
         }
         if start != 0 {
-            let command = line_to_cursor.split_whitespace().next().unwrap_or("");
+            let command_split = line_to_cursor.split_whitespace().collect::<Vec<&str>>();
+            let command = command_split[0];
+            let last_arg = command_split.last().unwrap_or(&"");
+            let prev_arg = command_split.get(command_split.len() - 2).unwrap_or(&"");
+
             if let Some(_) = check_if_external_completer_exists(command) {
-                let completions = run_external_completer(command);
+                let completions = run_external_completer(command, last_arg, prev_arg);
                 if !completions.is_empty() {
                     all_commands = completions;
                 }
