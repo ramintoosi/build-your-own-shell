@@ -51,3 +51,7 @@ pub(crate) fn run_external_completer(
     }
     Vec::new()
 }
+
+pub(crate) fn unregister_external_completer(command: &str) {
+    get_external_completers().lock().unwrap().remove(command);
+}
