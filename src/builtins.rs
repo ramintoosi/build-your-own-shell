@@ -121,9 +121,21 @@ pub(crate) fn run_builtin(
         "declare" => {
             if argument.starts_with("-p") {
                 let variable_name = argument.split_at(3).1;
-                let output = format!("declare: {}: not found\n", variable_name);
-                emit(&output, print_output, stdout_path, stdout_append)
-            } else {
+                if let Ok(value) = env::var(variable_name) {
+                    let output = format!("declare -- {}=\"{}\"\n", variable_name, value);
+                    emit(&output, print_output, stdout_path, stdout_append)
+                } else {
+                    let output = format!("declare: {}: not found\n", variable_name);
+                    emit(&output, print_output, stdout_path, stdout_append)
+                }
+            } else if argument.contains("=") {
+                let split_arg = argument.split("=").collect::<Vec<&str>>();
+                let variable_name = split_arg[0];
+                let value = split_arg[1];
+                env::set_var(variable_name, value);
+                None
+            }
+            else {
                 None
             }
         }
