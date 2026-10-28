@@ -22,9 +22,21 @@ pub(crate) fn add_external_completer(command: &str, path: &str) {
         .insert(command.to_string(), path.to_string());
 }
 
-pub(crate) fn run_external_completer(command: &str, last_arg: &str, prev_arg: &str) -> Vec<String> {
+pub(crate) fn run_external_completer(
+    command: &str,
+    last_arg: &str,
+    prev_arg: &str,
+    complete_command: &str,
+    pos: usize,
+) -> Vec<String> {
+    // Passing environment variables COMP_LINE and COMP_POINT
+    let env = [
+        ("COMP_LINE", complete_command),
+        ("COMP_POINT", &pos.to_string()),
+    ];
     if let Some(path) = check_if_external_completer_exists(command) {
         let output = Command::new(path)
+            .envs(env)
             .arg(command)
             .arg(last_arg)
             .arg(prev_arg)

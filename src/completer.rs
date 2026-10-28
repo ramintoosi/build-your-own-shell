@@ -37,7 +37,7 @@ impl Completer for ShellCompleter {
             let prev_arg = command_split.get(command_split.len() - 2).unwrap_or(&"");
 
             if let Some(_) = check_if_external_completer_exists(command) {
-                let completions = run_external_completer(command, last_arg, prev_arg);
+                let completions = run_external_completer(command, last_arg, prev_arg, line, pos);
                 if !completions.is_empty() {
                     all_commands = completions;
                 }
