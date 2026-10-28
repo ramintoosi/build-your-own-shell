@@ -6,7 +6,7 @@ use crate::background::print_background_processes;
 use crate::history::{format_history, load_history, save_history, save_history_on_exit};
 use crate::redirect::{handle_output, output_pipe};
 
-pub(crate) const BUILTINS: [&str; 7] = ["exit", "echo", "type", "pwd", "cd", "history", "jobs"];
+pub(crate) const BUILTINS: [&str; 8] = ["exit", "echo", "type", "pwd", "cd", "history", "jobs", "complete"];
 
 pub(crate) fn is_builtin(command: &str) -> bool {
     BUILTINS.contains(&command)
