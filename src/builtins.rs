@@ -131,6 +131,10 @@ pub(crate) fn run_builtin(
             } else if argument.contains("=") {
                 let split_arg = argument.split("=").collect::<Vec<&str>>();
                 let variable_name = split_arg[0];
+                if !validate_variable_name(variable_name) {
+                    let output = format!("declare: `{}': not a valid identifier\n", argument);
+                    return emit(&output, print_output, stdout_path, stdout_append);
+                }
                 let value = split_arg[1];
                 env::set_var(variable_name, value);
                 None
@@ -154,4 +158,22 @@ fn emit(
     } else {
         Some(output_pipe(text))
     }
+}
+
+
+fn validate_variable_name(variable_name: &str) -> bool {
+    if variable_name.is_empty() {
+        return false;
+    }
+    // first character must be a letter or underscore
+    if !variable_name.chars().next().unwrap().is_alphabetic() && variable_name.chars().next().unwrap() != '_' {
+        return false;
+    }
+    // remaining characters must be letters, numbers, or underscores
+    for c in variable_name.chars().skip(1) {
+        if !c.is_alphanumeric() && c != '_' {
+            return false;
+        }
+    }
+    true
 }
