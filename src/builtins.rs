@@ -3,7 +3,7 @@ use std::env;
 use std::process::{exit, Stdio};
 
 use crate::background::print_background_processes;
-use crate::external_completers::check_if_external_completer_exists;
+use crate::external_completers::{add_external_completer, check_if_external_completer_exists};
 use crate::history::{format_history, load_history, save_history, save_history_on_exit};
 use crate::redirect::{handle_output, output_pipe};
 
@@ -95,13 +95,21 @@ pub(crate) fn run_builtin(
         "complete" => {
             if argument.starts_with("-p") {
                 let command = argument.split_at(3).1;
-                if check_if_external_completer_exists(command) {
-                    None
+                if let Some(path) = check_if_external_completer_exists(command) {
+                    let output = format!("complete -C '{}' {}\n", path, command);
+                    emit(&output, print_output, stdout_path, stdout_append)
                 } else {
                     let output = format!("complete: {}: no completion specification\n", command);
                     return emit(&output, print_output, stdout_path, stdout_append);
                 }
-            } else {
+            } else if argument.starts_with("-C") {
+                let arg_split = argument.split(" ").collect::<Vec<&str>>();
+                let command = arg_split[2];
+                let path = arg_split[1];
+                add_external_completer(command, path);
+                None
+            }
+             else {
                 None
             }
             
