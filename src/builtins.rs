@@ -118,6 +118,15 @@ pub(crate) fn run_builtin(
                 None
             }
         }
+        "declare" => {
+            if argument.starts_with("-p") {
+                let variable_name = argument.split_at(3).1;
+                let output = format!("declare: {}: not found\n", variable_name);
+                emit(&output, print_output, stdout_path, stdout_append)
+            } else {
+                None
+            }
+        }
         _ => None, // not a builtin
     }
 }

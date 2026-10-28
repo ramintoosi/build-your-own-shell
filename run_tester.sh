@@ -28,7 +28,7 @@ fi
 # heading on the site; here it is "basics".
 # ei0 (The pwd builtin) is left out of navigation: that test uses sudo to
 # rename /usr/bin/pwd.
-SECTIONS=(basics navigation quoting redirection completion filename-completion programmable-completion pipelines background-jobs history history-persistence)
+SECTIONS=(basics navigation quoting redirection completion filename-completion programmable-completion pipelines background-jobs history history-persistence parameter-expansion)
 
 slugs_for() {
   case "$1" in
@@ -43,6 +43,7 @@ slugs_for() {
     background-jobs) echo "af3 at7 si2 jd6 dk5 ma9 rq2 bv8 fy4" ;;
     history) echo "bq4 yf5 ag6 rh7 vq0 dm2" ;;
     history-persistence) echo "za2 in3 sx3 zp4 kz7" ;;
+    parameter-expansion) echo "ji0 oa2 kv5 db8 ge9 br2 my0" ;;
   esac
 }
 
@@ -115,6 +116,13 @@ title_for() {
     sx3) echo "Append history to file" ;;
     zp4) echo "Read history on startup" ;;
     kz7) echo "Write history on exit" ;;
+    ji0) echo "The declare builtin" ;;
+    oa2) echo "Printing missing variables" ;;
+    kv5) echo "Storing shell variables" ;;
+    db8) echo "Validating variable names" ;;
+    ge9) echo "Expanding variables" ;;
+    br2) echo "Expansion with braces" ;;
+    my0) echo "Expanding empty variables" ;;
     *) echo "Stage $1" ;;
   esac
 }
@@ -146,6 +154,7 @@ normalize_section() {
     background-jobs|background_jobs|background|jobs) echo background-jobs ;;
     history) echo history ;;
     history-persistence|history_persistence|persistence) echo history-persistence ;;
+    parameter-expansion|parameter_expansion|parameter|"parameter expansion") echo parameter-expansion ;;
     *) return 1 ;;
   esac
 }
