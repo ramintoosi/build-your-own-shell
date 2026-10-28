@@ -2,10 +2,12 @@ mod background;
 mod builtins;
 mod completer;
 mod executor;
+mod external_completers;
 mod history;
 mod parser;
 mod path;
 mod redirect;
+
 use background::{add_to_background, get_length_of_background_processes, notify_finished_jobs};
 use completer::ShellCompleter;
 use executor::command_executor;
