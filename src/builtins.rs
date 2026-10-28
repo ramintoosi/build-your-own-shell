@@ -108,11 +108,9 @@ pub(crate) fn run_builtin(
                 let path = arg_split[1];
                 add_external_completer(command, path);
                 None
-            }
-             else {
+            } else {
                 None
             }
-            
         }
         _ => None, // not a builtin
     }

@@ -7,6 +7,7 @@ use rustyline::Helper;
 use rustyline::Result;
 
 use crate::builtins::BUILTINS;
+use crate::external_completers::{check_if_external_completer_exists, run_external_completer};
 use crate::path::{get_directory_files_and_folders, get_path_executables};
 /// autocomplete the command
 pub(crate) struct ShellCompleter;
@@ -28,6 +29,15 @@ impl Completer for ShellCompleter {
             let executables = get_path_executables();
             all_commands.extend(BUILTINS.iter().map(|s| s.to_string()));
             all_commands.extend(executables.into_keys());
+        }
+        if start != 0 {
+            let command = line_to_cursor.split_whitespace().next().unwrap_or("");
+            if let Some(_) = check_if_external_completer_exists(command) {
+                let completions = run_external_completer(command);
+                if !completions.is_empty() {
+                    all_commands = completions;
+                }
+            }
         }
         let mut matches = Vec::new();
 
