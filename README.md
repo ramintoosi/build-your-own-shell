@@ -1,49 +1,83 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/d4b673f4-c43e-4811-9e13-6b433aa0ea5b)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# Build Your Own Shell
 
-This is a starting point for Rust solutions to the
-["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
+[![progress-banner](https://backend.codecrafters.io/progress/shell/d4b673f4-c43e-4811-9e13-6b433aa0ea5b)](https://app.codecrafters.io/users/ramintoosi)
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+My solution to the [CodeCrafters "Build Your Own Shell"](https://app.codecrafters.io/courses/shell/overview) challenge, written in Rust for practice. 
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+Profile: [ramintoosi](https://app.codecrafters.io/users/ramintoosi).
 
-# Passing the first stage
+Implements a basic POSIX-style shell covering the course stages:
 
-The entry point for your `shell` implementation is in `src/main.rs`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+## Features
+
+- **REPL** with readline-style editing via [rustyline](https://github.com/kkawakami/rustyline)
+- **Builtins:** `echo`, `cd`, `pwd`, `type`, `exit`, `history`, `jobs`, `complete`, `declare`
+- **External programs** resolved from `PATH`
+- **Quoting** (single and double quotes)
+- **I/O redirection** (`>`, `>>`, `2>`, `2>>`)
+- **Pipelines** (`|`)
+- **Background jobs** (`&`) with `jobs` listing and completion notifications
+- **Tab completion** for builtins, executables, files/directories, and programmable completers (`complete -C`)
+- **History** with persistence (`history -r` / `-w` / `-a`, `HISTFILE` load on startup / save on exit)
+- **Parameter expansion** (`$VAR`, `${VAR}`) and `declare`
+
+## Requirements
+
+- [Rust](https://www.rust-lang.org/tools/install) 1.80+
+- Cargo
+
+## Build & run
 
 ```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
+cargo run --release
 ```
 
-Time to move on to the next stage!
-
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `cargo (1.87)` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main.rs`. This command compiles your Rust project, so it might be slow
-   the first time you run it. Subsequent runs will be fast.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
-
-# Running tests locally
-
-Use `./run_tester.sh` to run the official
-[shell-tester](https://github.com/codecrafters-io/shell-tester) against this
-repo without submitting. On first run it downloads the tester binary to
-`/tmp/shell-tester`.
+Or use the helper script (builds if needed, then runs):
 
 ```sh
-./run_tester.sh                 # every section
-./run_tester.sh all             # same
+./your_program.sh
+```
+
+You'll get a `$ ` prompt. Examples:
+
+```sh
+$ echo hello
+hello
+$ pwd
+/home/you
+$ ls | wc -l
+42
+$ sleep 5 &
+[1] 12345
+$ jobs
+[1]+  Running                 sleep 5 &
+$ history
+$ exit
+```
+
+## Project layout
+
+```
+src/
+  main.rs               # entry point
+  lib.rs                # REPL loop, pipelines, variable expansion
+  builtins.rs           # shell builtins
+  executor.rs           # command execution
+  parser.rs             # argument / quote parsing
+  redirect.rs           # stdout / stderr redirection
+  path.rs               # PATH lookup
+  history.rs            # in-memory + file history
+  background.rs         # background job tracking
+  completer.rs          # tab completion
+  external_completers.rs
+```
+
+## Testing
+
+Against the official [shell-tester](https://github.com/codecrafters-io/shell-tester):
+
+```sh
+./run_tester.sh                 # all sections
 ./run_tester.sh quoting         # one section
 ./run_tester.sh background-jobs
 ./run_tester.sh history-persistence
@@ -52,16 +86,5 @@ repo without submitting. On first run it downloads the tester binary to
 ./run_tester.sh parameter-expansion
 ```
 
-Sections, in course order: `basics`, `navigation`, `quoting`, `redirection`, `completion`, `filename-completion`, `programmable-completion`, `pipelines`, `background-jobs`, `history`, `history-persistence`, `parameter-expansion`.
+Available sections: `basics`, `navigation`, `quoting`, `redirection`, `completion`, `filename-completion`, `programmable-completion`, `pipelines`, `background-jobs`, `history`, `history-persistence`, `parameter-expansion`.
 
-Notes:
-
-- `basics` is the opening block on the course page (prompt through running a program). It has no section heading there.
-- The pwd stage inside Navigation is not included. It uses `sudo` to rename `/usr/bin/pwd`.
-  Run that stage via `codecrafters submit` instead.
-- `history-persistence` covers `history -r` / `-w` / `-a`, plus load-on-startup and save-on-exit via `HISTFILE`.
-- `filename-completion` covers tab-completing files and directories (including nested paths, multiple matches, and partial completions).
-- `programmable-completion` covers the `complete` builtin (`-p`, `-C`, `-r`) and invoking external completer scripts for tab completion.
-- `parameter-expansion` covers the `declare` builtin and `$VAR` / `${VAR}` expansion (including unset variables).
-- `background-jobs` covers the `jobs` builtin, launching with `&`, printing job output, listing, reaping, and recycling job numbers.
-- A temporary `.tester-run/` copy of the repo is created during runs (gitignored).
