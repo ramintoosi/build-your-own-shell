@@ -28,11 +28,20 @@ fn expand_word(s: &str) -> String {
     while let Some(rel) = s[i..].find('$') {
         let dollar_index = i + rel;
         out += &s[i..dollar_index];
-        let name_start = dollar_index + 1;
-        let name_end = s[name_start..]
+        let mut _has_brace = false;
+        let name_start = if s[dollar_index + 1..].starts_with('{') {
+            _has_brace = true;
+            dollar_index + 2
+        } else {
+            dollar_index + 1
+        };
+        let mut name_end = s[name_start..]
             .find(|c: char| !c.is_alphanumeric() && c != '_')
             .unwrap_or(s.len() - name_start);
         let name = &s[name_start..name_start + name_end];
+        if _has_brace {
+            name_end = name_end + 1;
+        }
         if let Ok(value) = env::var(name) {
             out += &value;
         } else {
@@ -40,6 +49,7 @@ fn expand_word(s: &str) -> String {
         }
         i = name_start + name_end;
     }
+    out += &s[i..];
     out
 }
 
