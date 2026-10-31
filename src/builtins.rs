@@ -10,7 +10,7 @@ use crate::history::{format_history, load_history, save_history, save_history_on
 use crate::redirect::{handle_output, output_pipe};
 
 pub(crate) const BUILTINS: [&str; 9] = [
-    "exit", "echo", "type", "pwd", "cd", "history", "jobs", "complete", "declare"
+    "exit", "echo", "type", "pwd", "cd", "history", "jobs", "complete", "declare",
 ];
 
 pub(crate) fn is_builtin(command: &str) -> bool {
@@ -138,8 +138,7 @@ pub(crate) fn run_builtin(
                 let value = split_arg[1];
                 env::set_var(variable_name, value);
                 None
-            }
-            else {
+            } else {
                 None
             }
         }
@@ -160,13 +159,14 @@ fn emit(
     }
 }
 
-
 fn validate_variable_name(variable_name: &str) -> bool {
     if variable_name.is_empty() {
         return false;
     }
     // first character must be a letter or underscore
-    if !variable_name.chars().next().unwrap().is_alphabetic() && variable_name.chars().next().unwrap() != '_' {
+    if !variable_name.chars().next().unwrap().is_alphabetic()
+        && variable_name.chars().next().unwrap() != '_'
+    {
         return false;
     }
     // remaining characters must be letters, numbers, or underscores

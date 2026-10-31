@@ -8,6 +8,8 @@ mod parser;
 mod path;
 mod redirect;
 
+use std::env;
+
 use background::{add_to_background, get_length_of_background_processes, notify_finished_jobs};
 use completer::ShellCompleter;
 use executor::command_executor;
@@ -16,6 +18,30 @@ use history::{add_to_history, load_history_on_startup};
 use rustyline::config::Config;
 use rustyline::CompletionType;
 use rustyline::Editor;
+
+fn expand_word(s: &str) -> String {
+    if !s.contains("$") {
+        return s.to_string();
+    }
+    let mut out = String::new();
+    let mut i = 0;
+    while let Some(rel) = s[i..].find('$') {
+        let dollar_index = i + rel;
+        out += &s[i..dollar_index];
+        let name_start = dollar_index + 1;
+        let name_end = s[name_start..]
+            .find(|c: char| !c.is_alphanumeric() && c != '_')
+            .unwrap_or(s.len() - name_start);
+        let name = &s[name_start..name_start + name_end];
+        if let Ok(value) = env::var(name) {
+            out += &value;
+        } else {
+            out += &format!("${}", name);
+        }
+        i = name_start + name_end;
+    }
+    out
+}
 
 pub fn run() {
     let config = Config::builder()
@@ -37,6 +63,9 @@ pub fn run() {
             print!("{}", finished_jobs);
         }
         input = rl.readline("$ ").unwrap();
+
+        // replace variables with their values
+        input = expand_word(&input);
 
         add_to_history(&input);
         rl.add_history_entry(&input).unwrap();
