@@ -45,7 +45,7 @@ fn expand_word(s: &str) -> String {
         if let Ok(value) = env::var(name) {
             out += &value;
         } else {
-            out += &format!("${}", name);
+            out += "";
         }
         i = name_start + name_end;
     }
